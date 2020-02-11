@@ -222,7 +222,6 @@ public final class PreIntercepet implements Interceptor {
             }
             requestMsg.append("└───────────────────────────────────────────────────RESPONSE_HEADERS─────────────────────────────────────────────────────────────\n");
 
-
             if (!logBody || !HttpHeaders.hasBody(response)) {
                 requestMsg.append("<-------------------------- END HTTP").append("\n");
             } else if (bodyEncoded(response.headers())) {
