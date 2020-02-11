@@ -1,9 +1,8 @@
 package com.play.accessabilityservice.api
 
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import com.play.accessabilityservice.BuildConfig
-import okhttp3.*
+  import com.tencent.smtt.export.external.interfaces.WebResourceRequest
+  import com.tencent.smtt.export.external.interfaces.WebResourceResponse
+  import okhttp3.*
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
@@ -26,13 +25,15 @@ class InternalOkHttpClient {
                     .readTimeout(60, TimeUnit.SECONDS)
                     .writeTimeout(60, TimeUnit.SECONDS)
                     .proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress("192.168.0.105", 8888)))
+                    .sslSocketFactory(SSLHandler.getSslSocketFactory())
+                    .hostnameVerifier(SSLHandler.getHostnameVerifier())
                     .build()
 
-                if (BuildConfig.DEBUG) {//printf logs while  debug
-                    okHttpClient = okHttpClient?.newBuilder()
-                        ?.addInterceptor(PreIntercepet().setLevel(PreIntercepet.Level.BODY))
-                        ?.build()
-                }
+//                if (BuildConfig.DEBUG) {//printf logs while  debug
+//                    okHttpClient = okHttpClient?.newBuilder()
+//                        ?.addInterceptor(PreIntercepet().setLevel(PreIntercepet.Level.BODY))
+//                        ?.build()
+//                }
             }
             return okHttpClient!!
         }
@@ -69,12 +70,15 @@ class InternalOkHttpClient {
                 var newQueries = StringBuilder()
                 //请求参数，get请求的参数在url的？ 后面
                 queries.forEachIndexed { index, key ->
-                    newQueries.append(key).append("=").append(oldUri.getQueryParameter(key) + "swl")
+                    newQueries.append(key).append("=").append(oldUri.getQueryParameter(key))
                     if (index < queries.size - 1) {
                         newQueries.append("&")
                     }
                 }
-                newUrl = "$oldSchem://$oldHost$oldPort$oldPath?$newQueries"
+                if (newQueries.isNotBlank()){
+                    newQueries.insert(0,"?")
+                }
+                newUrl = "$oldSchem://$oldHost$oldPort$oldPath$newQueries"
                 newRequest = newRequest.newBuilder().url(newUrl).get().build()
             }
             /**

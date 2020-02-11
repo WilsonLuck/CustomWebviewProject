@@ -4,6 +4,7 @@ import android.app.Application
 import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.Logger
 import com.orhanobut.logger.PrettyFormatStrategy
+import com.tencent.smtt.sdk.QbSdk
 
 /**
  * Created by ChanHong on 2020-02-08
@@ -20,5 +21,16 @@ class APP : Application() {
             .build()
 
         Logger.addLogAdapter(AndroidLogAdapter(formatStrategy))
+        QbSdk.initX5Environment(applicationContext, object : QbSdk.PreInitCallback {
+            override fun onCoreInitFinished() {
+                Logger.i("onViewInitFinished")
+
+            }
+
+            override fun onViewInitFinished(p0: Boolean) {
+                Logger.i("onViewInitFinished $p0")
+            }
+
+        })
     }
 }
