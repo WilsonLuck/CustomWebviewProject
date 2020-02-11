@@ -4,6 +4,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import com.play.accessabilityservice.BuildConfig
 import okhttp3.*
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
 class InternalOkHttpClient {
@@ -23,6 +25,7 @@ class InternalOkHttpClient {
                     .connectTimeout(60, TimeUnit.SECONDS)
                     .readTimeout(60, TimeUnit.SECONDS)
                     .writeTimeout(60, TimeUnit.SECONDS)
+                    .proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress("192.168.0.105", 8888)))
                     .build()
 
                 if (BuildConfig.DEBUG) {//printf logs while  debug
@@ -48,7 +51,9 @@ class InternalOkHttpClient {
             val oldPath = oldUri.path// /gettest
             val queries = oldUri.queryParameterNames //
             var newUrl = originRequest.url.toString()
-            var oldPort = oldUri.port
+            var oldPort = oldUri.port.let {
+                return@let if (it <= 0) "" else ":$it"
+            }
             var oldHeader = originRequest.requestHeaders
             var newHeaders: Headers = Headers.of(oldHeader)
 
@@ -69,7 +74,7 @@ class InternalOkHttpClient {
                         newQueries.append("&")
                     }
                 }
-                newUrl = "$oldSchem://$oldHost:$oldPort$oldPath?$newQueries"
+                newUrl = "$oldSchem://$oldHost$oldPort$oldPath?$newQueries"
                 newRequest = newRequest.newBuilder().url(newUrl).get().build()
             }
             /**

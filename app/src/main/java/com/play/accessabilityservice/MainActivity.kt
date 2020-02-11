@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
                 WebviewActivity.newIntent(
                     this,
                     "http://192.168.0.105:3000/posttest",
+//                    "https://www.jb51.net/article/159778.htm",
                     get = false,
                     params = "name=hc&age=12"
                 )
@@ -27,8 +28,11 @@ class MainActivity : AppCompatActivity() {
             startActivity(
                 WebviewActivity.newIntent(
                     this,
-                    "http://192.168.0.105:3000/gettest"
-                )
+//                    "http://192.168.0.105:3000/getjson",
+                    "https://www.jb51.net/article/159778.htm",
+                            injectJavascript = "asdas"
+//                    "www.baidu.com"
+                    )
             )
         }
     }

@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.api.InternalOkHttpClient
 import kotlinx.android.synthetic.main.activity_webview.*
+import java.util.*
 
 
 /**
@@ -51,6 +52,11 @@ class WebviewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_webview)
+//        val prop = System.getProperties()
+//        prop.setProperty("proxySet", "true")
+//        prop.setProperty("proxyHost", "192.168.0.105")
+//        prop.setProperty("proxyPort", "8888")
+
         val webSetting = webview.settings
         webSetting.javaScriptEnabled = true
         webSetting.javaScriptCanOpenWindowsAutomatically = true
@@ -124,14 +130,14 @@ class WebviewActivity : AppCompatActivity() {
                 super.shouldInterceptRequest(view, request)
             }
 
-
         }
 
 
         override fun onPageFinished(view: WebView?, url: String?) {
             if (injectJavascript.isNotBlank()) {
-                view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);");
+                view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
             }
+            Logger.i("current url is :$url")
         }
     }
 
