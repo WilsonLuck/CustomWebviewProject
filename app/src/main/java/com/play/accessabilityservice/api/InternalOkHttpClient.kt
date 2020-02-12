@@ -1,8 +1,12 @@
 package com.play.accessabilityservice.api
 
-  import com.tencent.smtt.export.external.interfaces.WebResourceRequest
-  import com.tencent.smtt.export.external.interfaces.WebResourceResponse
-  import okhttp3.*
+import com.google.gson.Gson
+import com.play.accessabilityservice.BuildConfig
+import com.play.accessabilityservice.api.data.ProxyDTO
+import com.play.accessabilityservice.api.data.RequestDTO
+import com.tencent.smtt.export.external.interfaces.WebResourceRequest
+import com.tencent.smtt.export.external.interfaces.WebResourceResponse
+import okhttp3.*
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
@@ -14,33 +18,24 @@ class InternalOkHttpClient {
         const val KEY_REQUEST_HEADERS = "request_headers"//请求头
         const val KEY_RESPONSE_HEADERS = "response_headers"//服务器返回的headers
         const val KEY_FINAL_URL = "final_url" //网页最后停止的url
-
-        fun getOkhttpClient(): OkHttpClient {
-            var okHttpClient: OkHttpClient? = null
-
-            if (okHttpClient == null) {
-                okHttpClient = OkHttpClient.Builder()
-                    .retryOnConnectionFailure(true)
-                    .connectTimeout(60, TimeUnit.SECONDS)
-                    .readTimeout(60, TimeUnit.SECONDS)
-                    .writeTimeout(60, TimeUnit.SECONDS)
-                    .proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress("192.168.0.105", 8888)))
-                    .sslSocketFactory(SSLHandler.getSslSocketFactory())
-                    .hostnameVerifier(SSLHandler.getHostnameVerifier())
-                    .build()
-
-//                if (BuildConfig.DEBUG) {//printf logs while  debug
-//                    okHttpClient = okHttpClient?.newBuilder()
-//                        ?.addInterceptor(PreIntercepet().setLevel(PreIntercepet.Level.BODY))
-//                        ?.build()
-//                }
+        var okHttpClient = OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .sslSocketFactory(SSLHandler.getSslSocketFactory())
+            .hostnameVerifier(SSLHandler.getHostnameVerifier())
+            .build().apply {
+                if (BuildConfig.DEBUG) {//printf logs while  debug
+                    this?.newBuilder()
+                        ?.addInterceptor(PreIntercepet().setLevel(PreIntercepet.Level.BODY))
+                        ?.build()
+                }
             }
-            return okHttpClient!!
-        }
 
         fun modifyRequest(
             originRequest: WebResourceRequest,
-            newParams: String = "",
+            requestDTO: RequestDTO,
             action: (sourceMap: MutableMap<String, Any>) -> Unit = {}
         ): WebResourceResponse {
 
@@ -58,7 +53,6 @@ class InternalOkHttpClient {
             var oldHeader = originRequest.requestHeaders
             var newHeaders: Headers = Headers.of(oldHeader)
 
-
             var newRequest = Request.Builder().url(newUrl).headers(newHeaders).build()
             var response: Response?
 
@@ -75,8 +69,8 @@ class InternalOkHttpClient {
                         newQueries.append("&")
                     }
                 }
-                if (newQueries.isNotBlank()){
-                    newQueries.insert(0,"?")
+                if (newQueries.isNotBlank()) {
+                    newQueries.insert(0, "?")
                 }
                 newUrl = "$oldSchem://$oldHost$oldPort$oldPath$newQueries"
                 newRequest = newRequest.newBuilder().url(newUrl).get().build()
@@ -86,8 +80,8 @@ class InternalOkHttpClient {
              */
             else {
                 var formBody = FormBody.Builder()
-                if (newParams.isNotBlank()) {
-                    val params = newParams.split("&")
+                if (requestDTO.formData.isNotBlank()) {
+                    val params = requestDTO.formData.split("&")
                     params.forEach {
                         val param = it.split("=")
                         if (param.size == 2) {
@@ -98,12 +92,41 @@ class InternalOkHttpClient {
                 newRequest = newRequest.newBuilder().url(newUrl).post(formBody.build()).build()
             }
 
+            /**
+             * 代理设置
+             */
+            if (requestDTO.proxy.isNotBlank()) {
+                var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
+                var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
+                when (gson.proxyType
+                    ) {
+                    "HTTP" -> {
+                        proxtTyp = Proxy.Type.HTTP
+                    }
+                    "SOCKS" -> {
+                        proxtTyp = Proxy.Type.SOCKS
+                    }
+                }
+                okHttpClient = okHttpClient.newBuilder()
+                    .proxy(Proxy(proxtTyp, InetSocketAddress(gson.serverAddress, gson.port)))
+                    .build()
+            }
 
-            response = getOkhttpClient().newCall(newRequest).execute()
+            if (requestDTO.sendHeaders.isNotBlank()) {
+                val headers = requestDTO.sendHeaders.split("&")
+                headers.forEach {
+                    val key = it.split("=")[0]
+                    val value = it.split("=")[1]
+                    newRequest =
+                        newRequest.newBuilder().removeHeader(key).addHeader(key, value).build()
+                }
+            }
+
+            response = okHttpClient.newCall(newRequest).execute()
             sourceMap[KEY_REQUEST_HEADERS] = newRequest.headers()
             sourceMap[KEY_RESPONSE_HEADERS] = response.headers()
             action(sourceMap)
-
+            okHttpClient = okHttpClient.newBuilder().proxy(Proxy.NO_PROXY).build()
             return WebResourceResponse(
                 response.header(
                     "text/html",

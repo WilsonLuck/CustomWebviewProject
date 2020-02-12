@@ -10,11 +10,14 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.api.InternalOkHttpClient
+import com.play.accessabilityservice.api.data.RequestDTO
 import com.tencent.smtt.export.external.interfaces.WebResourceError
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
 import com.tencent.smtt.export.external.interfaces.WebResourceResponse
 import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_webview.*
+import java.io.IOException
+import java.io.Serializable
 
 
 /**
@@ -26,39 +29,19 @@ class WebviewActivity : AppCompatActivity() {
     companion object {
         fun newIntent(
             context: Context,
-            url: String,
-            get: Boolean = true,
-            params: String = "",
-            needModifyRequest: Boolean = false,
-            injectJavascript: String = "",
-            clearCookies: Boolean = true
+            requestDTO: RequestDTO
         ): Intent {
-            return Intent(context, WebviewActivity::class.java)
-                .putExtra("url", url)
-                .putExtra("get", get)
-                .putExtra("params", params) //和get的参数一样 用 &链接，类似：name=hc&age=12
-                .putExtra("needModifyRequest", needModifyRequest)//是否需要修改请求，例如修改请求头
-                .putExtra("injectJavascript", injectJavascript)//需要注入的js
-                .putExtra("clearCookies", clearCookies)//是否清除cookies再访问
+            return Intent(context, WebviewActivity::class.java).putExtra(
+                "requestDTO",
+                requestDTO as Serializable
+            )
+
         }
     }
 
-    val needModifyRequest: Boolean by lazy {
-        intent.getBooleanExtra(
-            "needModifyRequest",
-            false
-        )
-    }//是否需要修改请求，例如 请求头，请求参数等等
-    val injectJavascript: String by lazy { intent.getStringExtra("injectJavascript") }//是否需要js注入
-    val currentUrl: String by lazy { intent.getStringExtra("url") }//传进来的URL
-    val get: Boolean by lazy { intent.getBooleanExtra("get", true) } //是否为get请求
-    val params: String by lazy { intent.getStringExtra("params") } //如果是post请求，则需要传这个参数
-    val clearCookies: Boolean by lazy {
-        intent.getBooleanExtra(
-            "clearCookies",
-            true
-        )
-    }//是否清除cookies再访问
+    val requestDTO: RequestDTO by lazy {
+        intent.getSerializableExtra("requestDTO") as RequestDTO
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +56,7 @@ class WebviewActivity : AppCompatActivity() {
         webSetting.setSupportMultipleWindows(false)
         // webSetting.setLoadWithOverviewMode(true);
         webSetting.setAppCacheEnabled(true)
-        // webSetting.setDatabaseEnabled(true);
+        webSetting.databaseEnabled = true
         webSetting.domStorageEnabled = true
         webSetting.javaScriptEnabled = true
         webSetting.setGeolocationEnabled(true)
@@ -84,20 +67,17 @@ class WebviewActivity : AppCompatActivity() {
             this.getDir("geolocation", 0)
                 .path
         )
-        // webSetting.setPageCacheCapacity(IX5WebSettings.DEFAULT_CACHE_CAPACITY);
         webSetting.pluginState = WebSettings.PluginState.ON_DEMAND
-        // webSetting.setRenderPriority(WebSettings.RenderPriority.HIGH);
-        // webSetting.setPreFectch(true);
         webview.addJavascriptInterface(MyJavaScriptInterface(), "HTMLOUT")
         webview.webViewClient = WBClient()
         webview.webChromeClient = WBChromeClient()
-        if (clearCookies) {
-            CookieManager.getInstance()
+        if (requestDTO.clearCookie) {
+            CookieManager.getInstance().removeAllCookie()
         }
-        if (get) {
-            webview.loadUrl(currentUrl)
+        if (requestDTO.method == "GET") {
+            webview.loadUrl(requestDTO.url)
         } else {
-            webview.postUrl(currentUrl, params.toByteArray())
+            webview.postUrl(requestDTO.url, requestDTO.formData.toByteArray())
         }
     }
 
@@ -115,6 +95,7 @@ class WebviewActivity : AppCompatActivity() {
     }
 
     inner class WBClient : WebViewClient() {
+
         override fun onReceivedHttpError(
             view: WebView?,
             request: WebResourceRequest?,
@@ -134,6 +115,9 @@ class WebviewActivity : AppCompatActivity() {
             super.onReceivedError(view, request, error)
         }
 
+        /**
+         * 拦截请求
+         */
         @RequiresApi(Build.VERSION_CODES.N)
         override fun shouldInterceptRequest(
             view: WebView?,
@@ -141,23 +125,35 @@ class WebviewActivity : AppCompatActivity() {
         ): WebResourceResponse? {
             Logger.i("shouldInterceptRequest: ${request!!.url}")
             //当webview请求的url和需求请求的url一致才会进行拦截
-            return if (currentUrl == request.url.toString()) {
-                InternalOkHttpClient.modifyRequest(request, params) {
-                    Logger.d(it)
-                }
-            } else {
-                return super.shouldInterceptRequest(view, request)
-            }
+            try {
+                return if (requestDTO.url == request.url.toString()) {
 
+                    InternalOkHttpClient.modifyRequest(request, requestDTO) {
+                        Logger.d("headers \n $it")
+                    }
+                } else {
+                    return super.shouldInterceptRequest(view, request)
+                }
+            } catch (exception: IOException) {
+                exception.printStackTrace()
+            }
+            return super.shouldInterceptRequest(view, request)
         }
 
+        /**
+         * 渲染完成，需要拿到html代码
+         */
         override fun onPageFinished(view: WebView?, url: String?) {
-            if (injectJavascript.isNotBlank()) {
+            if (requestDTO.javascriptCode.isNotBlank()) {
                 view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
+                view.loadUrl("javascript:${requestDTO.javascriptCode}")
             }
             Logger.i("current url is :$url")
         }
 
+        /**
+         * 重定向，需要根据正则判断判断是否继续加载
+         */
         override fun shouldOverrideUrlLoading(
             view: WebView?,
             request: WebResourceRequest?
@@ -167,18 +163,17 @@ class WebviewActivity : AppCompatActivity() {
             return super.shouldOverrideUrlLoading(view, request)
         }
 
-        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-            Logger.i("shouldOverrideUrlLoading: $url")
-            return super.shouldOverrideUrlLoading(view, url)
-        }
-
-
     }
 
     inner class MyJavaScriptInterface {
         @JavascriptInterface
         fun processHTML(html: String) {
             Logger.i(html)
+        }
+
+        @JavascriptInterface
+        fun changeA1() {
+
         }
     }
 
