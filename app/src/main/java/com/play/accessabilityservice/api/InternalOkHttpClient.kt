@@ -95,22 +95,22 @@ class InternalOkHttpClient {
             /**
              * 代理设置
              */
-            if (requestDTO.proxy.isNotBlank()) {
-                var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
-                var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
-                when (gson.proxyType
-                    ) {
-                    "HTTP" -> {
-                        proxtTyp = Proxy.Type.HTTP
-                    }
-                    "SOCKS" -> {
-                        proxtTyp = Proxy.Type.SOCKS
-                    }
-                }
-                okHttpClient = okHttpClient.newBuilder()
-                    .proxy(Proxy(proxtTyp, InetSocketAddress(gson.serverAddress, gson.port)))
-                    .build()
-            }
+//            if (requestDTO.proxy.isNotBlank()) {
+//                var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
+//                var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
+//                when (gson.proxyType
+//                    ) {
+//                    "HTTP" -> {
+//                        proxtTyp = Proxy.Type.HTTP
+//                    }
+//                    "SOCKS" -> {
+//                        proxtTyp = Proxy.Type.SOCKS
+//                    }
+//                }
+//                okHttpClient = okHttpClient.newBuilder()
+//                    .proxy(Proxy(proxtTyp, InetSocketAddress(gson.serverAddress, gson.port)))
+//                    .build()
+//            }
 
             if (requestDTO.sendHeaders.isNotBlank()) {
                 val headers = requestDTO.sendHeaders.split("&")

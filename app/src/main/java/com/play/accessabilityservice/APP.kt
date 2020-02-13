@@ -1,6 +1,7 @@
 package com.play.accessabilityservice
 
 import android.app.Application
+import android.content.Context
 import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.Logger
 import com.orhanobut.logger.PrettyFormatStrategy
@@ -32,5 +33,13 @@ class APP : Application() {
             }
 
         })
+
+        context4Application = applicationContext
     }
+
+    companion object {
+        var context4Application: Context? = null
+    }
+
+
 }

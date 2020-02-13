@@ -2,6 +2,8 @@ package com.play.accessabilityservice
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -10,13 +12,13 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.api.InternalOkHttpClient
+import com.play.accessabilityservice.api.WebviewProxySetting
 import com.play.accessabilityservice.api.data.RequestDTO
 import com.tencent.smtt.export.external.interfaces.WebResourceError
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
 import com.tencent.smtt.export.external.interfaces.WebResourceResponse
 import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_webview.*
-import java.io.IOException
 import java.io.Serializable
 
 
@@ -71,16 +73,21 @@ class WebviewActivity : AppCompatActivity() {
         webview.addJavascriptInterface(MyJavaScriptInterface(), "HTMLOUT")
         webview.webViewClient = WBClient()
         webview.webChromeClient = WBChromeClient()
+
+
         if (requestDTO.clearCookie) {
             CookieManager.getInstance().removeAllCookie()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
         if (requestDTO.method == "GET") {
             webview.loadUrl(requestDTO.url)
         } else {
             webview.postUrl(requestDTO.url, requestDTO.formData.toByteArray())
         }
     }
-
 
     inner class WBChromeClient : WebChromeClient() {
         override fun onProgressChanged(p0: WebView?, p1: Int) {
@@ -92,6 +99,7 @@ class WebviewActivity : AppCompatActivity() {
             }
             super.onProgressChanged(p0, p1)
         }
+
     }
 
     inner class WBClient : WebViewClient() {
@@ -111,7 +119,7 @@ class WebviewActivity : AppCompatActivity() {
             request: WebResourceRequest?,
             error: WebResourceError?
         ) {
-            Logger.e("onReceivedError" + error.toString())
+            Logger.e("onReceivedError" + error!!.description)
             super.onReceivedError(view, request, error)
         }
 
@@ -123,21 +131,21 @@ class WebviewActivity : AppCompatActivity() {
             view: WebView?,
             request: WebResourceRequest?
         ): WebResourceResponse? {
-            Logger.i("shouldInterceptRequest: ${request!!.url}")
+            Logger.i("shouldInterceptRequest headers: ${request!!.requestHeaders}")
+            Logger.i("shouldInterceptRequest urls : ${request.url}")
             //当webview请求的url和需求请求的url一致才会进行拦截
-            try {
-                return if (requestDTO.url == request.url.toString()) {
-
+            if (requestDTO.url == request.url.toString()) {
+                return try {
                     InternalOkHttpClient.modifyRequest(request, requestDTO) {
                         Logger.d("headers \n $it")
                     }
-                } else {
-                    return super.shouldInterceptRequest(view, request)
+                } catch (e: java.lang.Exception) {
+                    super.shouldInterceptRequest(view, request)
                 }
-            } catch (exception: IOException) {
-                exception.printStackTrace()
+
+            } else {
+                return super.shouldInterceptRequest(view, request)
             }
-            return super.shouldInterceptRequest(view, request)
         }
 
         /**
@@ -151,18 +159,35 @@ class WebviewActivity : AppCompatActivity() {
             Logger.i("current url is :$url")
         }
 
-        /**
-         * 重定向，需要根据正则判断判断是否继续加载
-         */
-        override fun shouldOverrideUrlLoading(
-            view: WebView?,
-            request: WebResourceRequest?
-        ): Boolean {
-            Logger.i("shouldOverrideUrlLoading: ${request!!.url}")
+        override fun shouldOverrideUrlLoading(p0: WebView?, p1: WebResourceRequest?): Boolean {
 
-            return super.shouldOverrideUrlLoading(view, request)
+            try {
+                if (!p1!!.url.toString().startsWith("http://") && !p1.url.toString().startsWith("https://")) {
+                    var intent = Intent(Intent.ACTION_VIEW, Uri.parse(p1.url.toString()))
+                    startActivity(intent)
+                    return true
+                }
+            } catch (e: Exception) {//防止crash (如果手机上没有安装处理某个scheme开头的url的APP, 会导致crash)
+                return true//没有安装该app时，返回true，表示拦截自定义链接，但不跳转，避免弹出上面的错误页面
+            }
+
+            // TODO Auto-generated method stub
+            //返回值是true的时候控制去WebView打开，为false调用系统浏览器或第三方浏览器
+//            Logger.i("shouldOverrideUrlLoading${p1.url}")
+            p0!!.loadUrl(p1.url.toString())
+            return true
         }
 
+        override fun onLoadResource(p0: WebView?, p1: String?) {
+            Logger.i("onLoadResource:$p1")
+
+            super.onLoadResource(p0, p1)
+        }
+
+        override fun onPageStarted(p0: WebView?, p1: String?, p2: Bitmap?) {
+            WebviewProxySetting.setProxy("192.168.0.103", 8888, APP::class.java.name)
+            super.onPageStarted(p0, p1, p2)
+        }
     }
 
     inner class MyJavaScriptInterface {
@@ -175,6 +200,11 @@ class WebviewActivity : AppCompatActivity() {
         fun changeA1() {
 
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        WebviewProxySetting.revertBackProxy(APP::class.java.name)
     }
 
 
