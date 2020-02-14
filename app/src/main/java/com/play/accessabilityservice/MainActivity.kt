@@ -19,11 +19,12 @@ class MainActivity : AppCompatActivity() {
                 WebviewActivity.newIntent(
                     this,
                     RequestDTO(
-                        "http://192.168.0.103:3000/posttest",
+                        "http://80.240.25.154/?post",
                         method = "POST",
-                        proxy = "{\"proxyType\":\"HTTP\"," +
-                                "\"serverAddress\":\"192.168.0.103\"," +
-                                "\"port\":8888}"
+                        formData = "name=hc&age=12"
+//                        proxy = "{\"proxyType\":\"HTTP\"," +
+//                                "\"serverAddress\":\"192.168.0.103\"," +
+//                                "\"port\":8888}"
 //                        sendHeaders = "User-Agent=AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36&Origin=https://www.freelancer.com"
                     )
 //                    "https://www.jb51.net/article/159778.htm",
@@ -36,15 +37,19 @@ class MainActivity : AppCompatActivity() {
                 WebviewActivity.newIntent(
                     this,
                     RequestDTO(
-                        url = "https://juejin.im/entry/578d938079bc44005ff26aec",
+//                        url = "http://80.240.25.154/?inj=http://80.240.25.154/injJs.php",
+//                        url = "http://80.240.25.154/green/",
+//                        blockUrlPattern = "daih.php\\?(.*)"
+                        url = "http://80.240.25.154/?xhr",
+                        blockXhrRequestPattern = "index.php\\?aeroxada(.*)"
                         //                        "http://192.168.0.103:3000/users",
 //                        url = "https://mbd.baidu.com/newspage/data/landingsuper?context=%7B%22nid%22%3A%22news_9307631538385676634%22%7D&n_type=0&p_from=1",
 //                        "https://www.v2ex.com/",
-                        proxy = "{\"proxyType\":\"HTTP\"," +
-                                "\"serverAddress\":\"192.168.0.103\"," +
-                                "\"port\":8888}",
-                        sendHeaders = "User-Agent=AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36&Origin=https://www.freelancer.com"
-//                        javascriptCode = "document.getElementsByClassName('a1')[0].text = \"111\""
+//                        proxy = "{\"proxyType\":\"HTTP\"," +
+//                                "\"serverAddress\":\"192.168.0.103\"," +
+//                                "\"port\":8888}",
+//                        sendHeaders = "User-Agent=AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36&Origin=https://www.freelancer.com"
+//                        javascriptCode = "document.body.innerText=\"Hello\"\n"
                     )
 //                    "https://www.v2ex.com/",
 //

@@ -8,11 +8,14 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.JavascriptInterface
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import com.google.gson.Gson
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.api.InternalOkHttpClient
 import com.play.accessabilityservice.api.WebviewProxySetting
+import com.play.accessabilityservice.api.data.ProxyDTO
 import com.play.accessabilityservice.api.data.RequestDTO
 import com.tencent.smtt.export.external.interfaces.WebResourceError
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
@@ -20,6 +23,8 @@ import com.tencent.smtt.export.external.interfaces.WebResourceResponse
 import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_webview.*
 import java.io.Serializable
+import java.net.Proxy
+import java.util.regex.Pattern
 
 
 /**
@@ -133,6 +138,15 @@ class WebviewActivity : AppCompatActivity() {
         ): WebResourceResponse? {
             Logger.i("shouldInterceptRequest headers: ${request!!.requestHeaders}")
             Logger.i("shouldInterceptRequest urls : ${request.url}")
+
+            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
+                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
+                val matecher = pattern.matcher(request.url.toString())
+                if (matecher.find())
+                    Logger.i("find blockXhrRequestPattern return the request")
+                return null
+            }
+
             //当webview请求的url和需求请求的url一致才会进行拦截
             if (requestDTO.url == request.url.toString()) {
                 return try {
@@ -152,15 +166,26 @@ class WebviewActivity : AppCompatActivity() {
          * 渲染完成，需要拿到html代码
          */
         override fun onPageFinished(view: WebView?, url: String?) {
+            view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
             if (requestDTO.javascriptCode.isNotBlank()) {
-                view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
                 view.loadUrl("javascript:${requestDTO.javascriptCode}")
             }
             Logger.i("current url is :$url")
         }
 
         override fun shouldOverrideUrlLoading(p0: WebView?, p1: WebResourceRequest?): Boolean {
-
+            val regex = requestDTO.blockUrlPattern
+            val pattern = Pattern.compile(regex)
+            val matchers = pattern.matcher(p1!!.url.toString())
+            if (matchers.find()) {
+                Toast.makeText(
+                    this@WebviewActivity,
+                    "${p1.url} has been abandon",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return true
+            }
+            Logger.i("shouldOverrideUrlLoading${p1!!.url}")
             try {
                 if (!p1!!.url.toString().startsWith("http://") && !p1.url.toString().startsWith("https://")) {
                     var intent = Intent(Intent.ACTION_VIEW, Uri.parse(p1.url.toString()))
@@ -173,19 +198,41 @@ class WebviewActivity : AppCompatActivity() {
 
             // TODO Auto-generated method stub
             //返回值是true的时候控制去WebView打开，为false调用系统浏览器或第三方浏览器
-//            Logger.i("shouldOverrideUrlLoading${p1.url}")
             p0!!.loadUrl(p1.url.toString())
             return true
         }
 
         override fun onLoadResource(p0: WebView?, p1: String?) {
             Logger.i("onLoadResource:$p1")
-
+            /*
+            拦截xhr请求
+             */
+            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
+                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
+                val matecher = pattern.matcher(p1)
+                if (matecher.find())
+                    Logger.i("find blockXhrRequestPattern return the request")
+                return
+            }
             super.onLoadResource(p0, p1)
         }
 
         override fun onPageStarted(p0: WebView?, p1: String?, p2: Bitmap?) {
-            WebviewProxySetting.setProxy("192.168.0.103", 8888, APP::class.java.name)
+            if (requestDTO.proxy.isNotBlank()) {
+                var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
+                var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
+                when (gson.proxyType
+                    ) {
+                    "HTTP" -> {
+                        proxtTyp = Proxy.Type.HTTP
+                    }
+                    "SOCKS" -> {
+                        proxtTyp = Proxy.Type.SOCKS
+                    }
+                }
+
+                WebviewProxySetting.setProxy(gson.serverAddress, gson.port, APP::class.java.name)
+            }
             super.onPageStarted(p0, p1, p2)
         }
     }
