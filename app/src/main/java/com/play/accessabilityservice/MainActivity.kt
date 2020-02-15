@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.play.accessabilityservice.api.WebviewProxySetting
 import com.play.accessabilityservice.api.data.RequestDTO
+import com.play.accessabilityservice.socket.SocketConductor
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -59,5 +60,7 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         }
+
+        SocketConductor.instance.connect2Server(this)
     }
 }

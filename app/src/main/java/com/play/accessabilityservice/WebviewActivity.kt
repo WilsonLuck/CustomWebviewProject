@@ -174,6 +174,7 @@ class WebviewActivity : AppCompatActivity() {
         }
 
         override fun shouldOverrideUrlLoading(p0: WebView?, p1: WebResourceRequest?): Boolean {
+            //正则 用于判断是否需要重定向
             val regex = requestDTO.blockUrlPattern
             val pattern = Pattern.compile(regex)
             val matchers = pattern.matcher(p1!!.url.toString())
