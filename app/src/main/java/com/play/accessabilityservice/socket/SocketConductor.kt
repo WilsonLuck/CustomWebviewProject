@@ -3,13 +3,11 @@ package com.play.accessabilityservice.socket
 import android.content.Context
 import com.google.gson.Gson
 import com.orhanobut.logger.Logger
+import com.play.accessabilityservice.api.data.RequestDTO
 import com.play.accessabilityservice.system.SystemInfo
 import io.socket.client.IO
 import io.socket.client.Socket
 import io.socket.emitter.Emitter
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 
 /**
  * Created by ChanHong on 2019/3/20
@@ -18,7 +16,7 @@ import kotlinx.coroutines.delay
 class SocketConductor {
 
 
-    var serverAddress = "http://192.168.0.105:3000"
+    var serverAddress = "http://192.168.0.109:3000"
     var emmiter: Emitter? = null
     var socket: Socket? = null
     var context: Context? = null
@@ -31,7 +29,10 @@ class SocketConductor {
      * build the connection between the c/s
      *  and post the phone information to server
      */
-    fun connect2Server(context: Context): Emitter {
+    fun connect2Server(
+        context: Context,
+        hookParamsReceiveListener: (requestDTO: RequestDTO) -> Unit
+    ): Emitter {
         this.context = context
 
         val systemInfo = SystemInfo().apply { devicesId = "123" }
@@ -54,11 +55,14 @@ class SocketConductor {
                             Logger.d(it)
                         }
                         .on(CmdFromServer.HOOK_PARAMS) {
-                            Logger.d("CmdFromServer.HOOK_PARAMS :\n $it")
-                            GlobalScope.async {
-                                delay(5000)
-                                socket!!.emit(Commands2Server.DATA_CALLBACK, data)
-                            }
+                            val requestDTO =
+                                Gson().fromJson(it[0].toString(), RequestDTO::class.java)
+                            Logger.d("CmdFromServer.HOOK_PARAMS :\n $requestDTO")
+                            hookParamsReceiveListener(requestDTO)
+//                            GlobalScope.async {
+//                                //                                delay(5000)
+//                                socket!!.emit(requestDTO.uuid4socketEvent, data)
+//                            }
                         }
                 }
             }

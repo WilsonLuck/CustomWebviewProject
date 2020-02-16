@@ -23,4 +23,12 @@
         android:text="get请求"
         app:layout_constraintLeft_toLeftOf="@id/btn_post"
         app:layout_constraintTop_toBottomOf="@id/btn_post" />
+
+    <ImageView
+        android:id="@+id/img_screentshot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="17dp"
+        app:layout_constraintLeft_toLeftOf="@id/btn_get"
+        app:layout_constraintTop_toBottomOf="@id/btn_get" />
 </androidx.constraintlayout.widget.ConstraintLayout>

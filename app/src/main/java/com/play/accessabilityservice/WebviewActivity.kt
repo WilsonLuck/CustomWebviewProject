@@ -17,6 +17,9 @@ import com.play.accessabilityservice.api.InternalOkHttpClient
 import com.play.accessabilityservice.api.WebviewProxySetting
 import com.play.accessabilityservice.api.data.ProxyDTO
 import com.play.accessabilityservice.api.data.RequestDTO
+import com.play.accessabilityservice.api.data.ResponseDTO
+import com.play.accessabilityservice.socket.SocketConductor
+import com.play.accessabilityservice.system.ScreenShot
 import com.tencent.smtt.export.external.interfaces.WebResourceError
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
 import com.tencent.smtt.export.external.interfaces.WebResourceResponse
@@ -50,6 +53,9 @@ class WebviewActivity : AppCompatActivity() {
         intent.getSerializableExtra("requestDTO") as RequestDTO
     }
 
+    var currentLoadURL = ""
+    var responseHeaders = mutableMapOf<String, String>()
+    var img2Base64 = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_webview)
@@ -151,7 +157,7 @@ class WebviewActivity : AppCompatActivity() {
             if (requestDTO.url == request.url.toString()) {
                 return try {
                     InternalOkHttpClient.modifyRequest(request, requestDTO) {
-                        Logger.d("headers \n $it")
+                        responseHeaders.putAll(it[InternalOkHttpClient.KEY_RESPONSE_HEADERS] as MutableMap<String, String>)
                     }
                 } catch (e: java.lang.Exception) {
                     super.shouldInterceptRequest(view, request)
@@ -166,11 +172,12 @@ class WebviewActivity : AppCompatActivity() {
          * 渲染完成，需要拿到html代码
          */
         override fun onPageFinished(view: WebView?, url: String?) {
-            view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
+            currentLoadURL = url!!
             if (requestDTO.javascriptCode.isNotBlank()) {
-                view.loadUrl("javascript:${requestDTO.javascriptCode}")
+                view!!.loadUrl("javascript:${requestDTO.javascriptCode}")
             }
             Logger.i("current url is :$url")
+            view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
         }
 
         override fun shouldOverrideUrlLoading(p0: WebView?, p1: WebResourceRequest?): Boolean {
@@ -242,6 +249,14 @@ class WebviewActivity : AppCompatActivity() {
         @JavascriptInterface
         fun processHTML(html: String) {
             Logger.i(html)
+            img2Base64 = ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
+            val responseDTO = ResponseDTO(currentLoadURL, responseHeaders, html, img2Base64)
+            SocketConductor.instance.socket!!.emit(
+                requestDTO.uuid4socketEvent,
+                Gson().toJson(responseDTO)
+            ).apply {
+                finish()
+            }
         }
 
         @JavascriptInterface

@@ -15,7 +15,7 @@ import java.io.Serializable
 
 data class RequestDTO(
     //需要webview打开的url
-    var url:String,
+    var url: String,
 
 
     //{GET/POST/PUT}，请求服务器的方法，默认GET
@@ -57,5 +57,6 @@ data class RequestDTO(
     var blockUrlPattern: String = "",
 
     //正则表达式列表， 如果被访问的页面 有多个XHR请求，并且XHR请求的网址符合​block_xhr_request_pattern，则返回并且 拦截XHR的请求数据
-    var blockXhrRequestPattern: String = ""
+    var blockXhrRequestPattern: String = "",
+    var uuid4socketEvent: String = ""
 ) : Serializable
