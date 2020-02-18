@@ -124,6 +124,7 @@ class InternalOkHttpClient {
 
             response = okHttpClient.newCall(newRequest).execute()
             sourceMap[KEY_REQUEST_HEADERS] = newRequest.headers()
+            response.headers().toMultimap()
             sourceMap[KEY_RESPONSE_HEADERS] = response.headers()
             action(sourceMap)
             okHttpClient = okHttpClient.newBuilder().proxy(Proxy.NO_PROXY).build()

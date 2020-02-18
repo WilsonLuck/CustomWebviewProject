@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+var door = require('../door');
 var debug = require('debug')('book:server');
 var http = require('http');
 /**
@@ -12,21 +12,37 @@ var http = require('http');
  */
 
 var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
-
+door.set('port', port);
 /**
  * Create HTTP server.
  */
-
-var server = http.createServer(app);
+var server = http.createServer(door);
 var socket = require('socket.io')(server);
 global.sockets = new Map();
+global.userInfo = [];
 socket.on('connection', (client) => {
   console.log('new client connected');
   client.on('system_info', (args) => {
-    console.log(args);
-    saveUserInfo(client, args);
-  });
+      console.log(args);
+      saveUserInfo(client, args);
+    })
+    .on("disconnect", (reason) => {
+      console.log(`disconnect ${reason}`);
+      console.log("need delete device:" + client.id);
+      global.sockets.delete(client.id);
+      for (i = 0; i < global.userInfo.length; i++) {
+        let jsonObject = JSON.parse(global.userInfo[i]);
+        console.log(jsonObject.detail.devicesID === client.id);
+        if (jsonObject.detail.devicesID === client.id) {
+          global.userInfo.splice(i, 1);
+        }
+      }
+      console.log(global.userInfo);
+    })
+    .on('disconnecting', (reson) => {
+      console.log("disconnecting");
+
+    });
   var datas = ["hc", "\"name\":\"12\""];
   client.emit("cmd", datas);
 });
@@ -100,6 +116,22 @@ function onListening() {
 
 function saveUserInfo(socket, data) {
   let userInfo = JSON.parse(data); //each clients userInfo
-  console.log('a user connected info: \n' + data);
-  global.sockets.set(userInfo.devicesId, socket);
+  let userMap = new Map();
+  userMap.set('detail', userInfo);
+  global.userInfo.push(_mapToJson(userMap));
+  global.sockets.set(socket.id, socket);
+}
+
+function strMapToObj(strMap) {
+  let obj = Object.create(null);
+  for (let [k, v] of strMap) {
+    obj[k] = v;
+  }
+  return obj;
+}
+/**
+ *map转换为json
+ */
+function _mapToJson(map) {
+  return JSON.stringify(strMapToObj(map));
 }

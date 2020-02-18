@@ -149,6 +149,12 @@ module.exports = class SocketHandler {
                         msg: 'devices did not connected,please connect the devices and try again',
                         data: ''
                     });
+                    global.resLogger.info({
+                        headers: this.res._header,
+                        code: 40001,
+                        msg: 'devices did not connected,please connect the devices and try again',
+                        data: ''
+                    });
                     return;
                 };
                 let requestDatas = JSON.stringify({
@@ -173,10 +179,14 @@ module.exports = class SocketHandler {
                     .emit('hook_params', requestDatas)
                     .once(this.uuid4socketEvent, (datas) => {
                         clearTimeout(timer);
-                        console.log('receive data' + datas);
+                        // console.log(JSON.stringify(datas));
                         this.res.status(200).json({
                             msg: "success",
                             code: 200,
+                            data: datas
+                        });
+                        global.resLogger.info({
+                            headers: this.res._header,
                             data: datas
                         });
                     });
@@ -185,20 +195,28 @@ module.exports = class SocketHandler {
                  * 如果30s还没有回馈 直接返回timeout给请求客户端
                  */
                 let timer = setTimeout(() => {
+                    global.resLogger.info({
+                        headers: this.res._header,
+                        code: 408,
+                        msg: 'Request TimeOut',
+                        data: ''
+                    });
+
                     this.res.status(200).json({
                         code: 408,
                         msg: 'Request TimeOut',
                         data: ''
                     });
-                    client
-                        .removeAllListeners(this.uuid4socketEvent, () => {
-                            console.log('remove success')
-                        });
+
+                    client.removeAllListeners(this.uuid4socketEvent, () => {
+                        console.log('remove success')
+                    });
                     console.log('time delay 3000ms');
-                }, 30000);
+                }, 50000);
             }
 
         } catch (error) {
+            global.errLogger.error(error);
             console.log(error);
             this.res.json({
                 code: 500,

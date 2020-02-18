@@ -16,7 +16,7 @@ import io.socket.emitter.Emitter
 class SocketConductor {
 
 
-    var serverAddress = "http://192.168.0.109:3000"
+    var serverAddress = "http://192.168.0.104:3000"
     var emmiter: Emitter? = null
     var socket: Socket? = null
     var context: Context? = null
@@ -35,9 +35,6 @@ class SocketConductor {
     ): Emitter {
         this.context = context
 
-        val systemInfo = SystemInfo().apply { devicesId = "123" }
-        val data = Gson().toJson(systemInfo, SystemInfo::class.java)
-        Logger.json(data)
 
         this.socket = IO
             .socket(serverAddress)
@@ -46,6 +43,13 @@ class SocketConductor {
                     connect()
                     emmiter = this.on(Socket.EVENT_CONNECT) {
                         Logger.i("connection_success")
+
+                        val systemInfo = SystemInfo(
+                            socket!!.id(),
+                            ipAddress = SystemInfo.getIpAddress(context)!!
+                        )
+                        val data = Gson().toJson(systemInfo, SystemInfo::class.java)
+                        Logger.json(data)
                         this.emit(Commands2Server.SYSTEM_INFO, data)
                     }
                         .on(Socket.EVENT_DISCONNECT) {
