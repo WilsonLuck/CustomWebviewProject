@@ -1,5 +1,6 @@
 package com.play.accessabilityservice
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.orhanobut.logger.Logger
@@ -11,13 +12,13 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
-
+    var next = false//是否可以进行下一个爬虫
+    var commandsList = mutableListOf<RequestDTO>()
+    var firstCreate = true
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         btn_post.setOnClickListener {
-            //            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-//            startActivity(intent)
             startActivity(
                 WebviewActivity.newIntent(
                     this,
@@ -36,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         }
         btn_get.setOnClickListener {
             WebviewProxySetting.revertBackProxy(APP::class.java.name)
-            Logger.i("img base64 :"+ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this)))
+            Logger.i("img base64 :" + ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this)))
 //            startActivity(
 //                WebviewActivity.newIntent(
 //                    this,
@@ -65,7 +66,39 @@ class MainActivity : AppCompatActivity() {
         }
 
         SocketConductor.instance.connect2Server(this) {
-            startActivity(WebviewActivity.newIntent(this, it))
+            Logger.i("current cmd list size is : ${commandsList.size} can next?:${next}")
+            if (!firstCreate && !next) {
+                commandsList.add(it)
+                Logger.i("next is $next, so add the cmd to cmdlist")
+
+                return@connect2Server
+            }
+            if (firstCreate || (commandsList.isEmpty() && next)) {
+                startActivityForResult(WebviewActivity.newIntent(this, it), 10000)
+                Logger.i("next is $next, so startActivityForResult")
+
+                next = false
+                firstCreate = false
+            }
+        }
+
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            10000 -> {
+                next = data!!.getBooleanExtra("next", false)
+                if (next && commandsList.isNotEmpty()) {
+                    startActivityForResult(
+                        WebviewActivity.newIntent(this, commandsList.first()),
+                        10000
+                    )
+                    commandsList.removeAt(0)
+                    Logger.i("current cmd list size is : ${commandsList.size} can next?:${next}")
+
+                }
+            }
         }
     }
 }

@@ -32,6 +32,17 @@ router.get("/getjson", (req, res, next) => {
 });
 
 router.post("/webHook", (req, res, next) => {
+  //需要打印的信息
+  var loggerInfo = `\n Method:${req.method}`;
+  //请求头
+  loggerInfo += `\n headers: ${JSON.stringify(req.headers)} \n`;
+
+  if (req.method == 'GET') {
+    loggerInfo += ` data: ${JSON.stringify(req.query)} \n`;
+  } else {
+    loggerInfo += ` data: ${JSON.stringify(req.body)} \n`;
+  }
+  global.reqLogger.info(loggerInfo);
   return new SocketHandler(req, res, next).handler();
 });
 module.exports = router;

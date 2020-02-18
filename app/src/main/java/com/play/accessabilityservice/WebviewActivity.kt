@@ -1,5 +1,6 @@
 package com.play.accessabilityservice
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -25,6 +26,9 @@ import com.tencent.smtt.export.external.interfaces.WebResourceRequest
 import com.tencent.smtt.export.external.interfaces.WebResourceResponse
 import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_webview.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import java.io.Serializable
 import java.net.Proxy
 import java.util.regex.Pattern
@@ -56,6 +60,7 @@ class WebviewActivity : AppCompatActivity() {
     var currentLoadURL = ""
     var responseHeaders = mutableMapOf<String, String>()
     var img2Base64 = ""
+    var html = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_webview)
@@ -103,7 +108,23 @@ class WebviewActivity : AppCompatActivity() {
     inner class WBChromeClient : WebChromeClient() {
         override fun onProgressChanged(p0: WebView?, p1: Int) {
             if (p1 == 100) {
+                Logger.i("onProgress Render Completed")
                 progressBar.visibility = View.GONE//加载完网页进度条消失
+                img2Base64 = ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
+                val responseDTO = ResponseDTO(currentLoadURL, responseHeaders, html, img2Base64)
+                GlobalScope.async {
+                    delay(5000)
+                    SocketConductor.instance.socket!!.emit(
+                        requestDTO.uuid4socketEvent,
+                        Gson().toJson(responseDTO)
+                    ).apply {
+                        val nextIntent = Intent()
+                        nextIntent.putExtra("next", true)
+                        this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
+                        finish()
+                    }
+                }
+
             } else {
                 progressBar.visibility = View.VISIBLE//开始加载网页时显示进度条
                 progressBar.progress = p1//设置进度值
@@ -182,17 +203,20 @@ class WebviewActivity : AppCompatActivity() {
 
         override fun shouldOverrideUrlLoading(p0: WebView?, p1: WebResourceRequest?): Boolean {
             //正则 用于判断是否需要重定向
-            val regex = requestDTO.blockUrlPattern
-            val pattern = Pattern.compile(regex)
-            val matchers = pattern.matcher(p1!!.url.toString())
-            if (matchers.find()) {
-                Toast.makeText(
-                    this@WebviewActivity,
-                    "${p1.url} has been abandon",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return true
+            if (requestDTO.blockUrlPattern.isNotBlank()) {
+                val regex = requestDTO.blockUrlPattern
+                val pattern = Pattern.compile(regex)
+                val matchers = pattern.matcher(p1!!.url.toString())
+                if (matchers.find()) {
+                    Toast.makeText(
+                        this@WebviewActivity,
+                        "${p1.url} has been abandon",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return true
+                }
             }
+
             Logger.i("shouldOverrideUrlLoading${p1!!.url}")
             try {
                 if (!p1!!.url.toString().startsWith("http://") && !p1.url.toString().startsWith("https://")) {
@@ -206,6 +230,7 @@ class WebviewActivity : AppCompatActivity() {
 
             // TODO Auto-generated method stub
             //返回值是true的时候控制去WebView打开，为false调用系统浏览器或第三方浏览器
+            requestDTO.url = p1.url.toString()
             p0!!.loadUrl(p1.url.toString())
             return true
         }
@@ -243,20 +268,14 @@ class WebviewActivity : AppCompatActivity() {
             }
             super.onPageStarted(p0, p1, p2)
         }
+
     }
 
     inner class MyJavaScriptInterface {
         @JavascriptInterface
         fun processHTML(html: String) {
             Logger.i(html)
-            img2Base64 = ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
-            val responseDTO = ResponseDTO(currentLoadURL, responseHeaders, html, img2Base64)
-            SocketConductor.instance.socket!!.emit(
-                requestDTO.uuid4socketEvent,
-                Gson().toJson(responseDTO)
-            ).apply {
-                finish()
-            }
+            this@WebviewActivity.html = html
         }
 
         @JavascriptInterface
