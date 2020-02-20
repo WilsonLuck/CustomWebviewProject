@@ -29,7 +29,10 @@ import kotlinx.android.synthetic.main.activity_webview.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+<<<<<<< HEAD
 import okhttp3.Headers
+=======
+>>>>>>> 9cb20c35f794423213cfb0fab531320957b3aa63
 import java.io.Serializable
 import java.net.Proxy
 import java.util.regex.Pattern

@@ -179,7 +179,8 @@ module.exports = class SocketHandler {
                     .emit('hook_params', requestDatas)
                     .once(this.uuid4socketEvent, (datas) => {
                         clearTimeout(timer);
-                        // console.log(JSON.stringify(datas));
+
+                        console.log(JSON.stringify(datas));
                         this.res.status(200).json({
                             msg: "success",
                             code: 200,
