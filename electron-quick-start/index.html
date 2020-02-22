@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"> -->
+  <!-- <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'"> -->
+  <title>Hello World!</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+</head>
+<style>
+  .class1 {
+    background: #444;
+    color: blue
+  }
+
+  .active {
+    width: 100px;
+    height: 100px;
+    background: red
+  }
+
+  .text-danger {
+    background: blue
+  }
+
+  .base {
+    background: black
+  }
+
+  .error {
+    background: red
+  }
+</style>
+
+<body>
+  <h1>Hello World!</h1>
+  We are using Node.js <span id="node-version"></span>,
+  Chromium <span id="chrome-version"></span>,
+  and Electron <span id="electron-version"></span>.
+  <!-- You can also require other files to run in this process -->
+  <script src="./renderer.js"></script>
+
+  <div id="title">
+    <!-- <label for="r1">修改颜色</label>
+    <input type="checkbox" v-model="use" id="r1">
+    <br><br>
+    <div v-bind:class="{'class1':use}">v-bind:class 指令 </div>
+    <p v-if="show">hahaha</p>
+    <p v-else>aaaa</p>
+    <p v-show="show">?????</p>
+    <p v-on:click="changeShow">改变</p>
+    <input v-model="name">
+    <ol>
+      <li v-for="(value,index) in sites">{}</li>
+    </ol>
+    <div v-bind:class="classObject">{{isActive}}</div>
+    <div v-bind:style="{color:'#444'}">dasdas</div>
+    <div v-on:click="keyEnter">{{enter}}</div>
+    <input v-on:keyup.enter="keyEnter" v-model="enter">
+    <input type="checkbox" v-model="checkItems" id="int" value="2">
+    <label for="int">intitems</label>
+    <div>选择都网站是{{checkItems}}</div>
+    <select v-model="checkItems" name="country">
+      <option value="选择一个网站">选择一个网站</option>
+      <option value="www.baidu.com">百度</option>
+      <option value="www.google.com">谷歌</option>
+    </select>
+    <runoob v-bind:msg="enter">
+    </runoob> -->
+
+  </div>
+
+</body>
+<script>
+  Vue.component('runoob', {
+    props: ['msg'],
+    template: '<h1>自定义组件:{{msg}}</h1>'
+  });
+
+  let data = {
+    name: "hc",
+    content: "<h2>{{name}}</h2>",
+    use: false,
+    show: false,
+    sites: [12, 23, 34, 4, 5, 6],
+    isActive: false,
+    hasError: false,
+    class_Active: {
+      active: true,
+    },
+    enter: 1,
+    checkItems: "选择一个网站"
+  };
+  var Child = {
+    template: '<div>你好啊</div>'
+  }
+  let vm = new Vue({
+    el: '#title',
+    data: data,
+    methods: {
+      renderTitle: function () {
+        document.getElementById("title").innerText = vm.name;
+      },
+      changeShow: function () {
+        this.show = !this.show;
+        this.name = "swl";
+        this.isActive = !this.isActive;
+        this.hasError = !this.hasError;
+      },
+      keyEnter: function () {
+        this.enter += 1;
+      }
+    },
+    computed: {
+      classObject: function () {
+        return {
+          base: false,
+          active: this.isActive,
+          error: false
+        }
+      }
+    },
+  })
+  vm.renderTitle();
+</script>
+
+</html>

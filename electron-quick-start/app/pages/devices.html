@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="*"> -->
+    <!-- <meta http-equiv="Access-Control-Allow-Origin" content="*" /> -->
+    <title>Client!</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+    <link rel="stylesheet" href="../assets/css/devices_list.css" />
+    <!-- import CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- import JavaScript -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+
+</head>
+
+<body>
+    <div id="window" class="window-top">
+        <div class="parent">
+            <img src="../assets/img/splash1.jpg" id="title-img" width="100px" height="100px">
+            <el-input class="input-url" placeholder="Please input" v-model="input" prefix-icon="el-icon-search">
+            </el-input>
+            <el-button style="margin-left:160px" icon="el-icon-search" circle v-on:click="searchDevices"
+                v-loading.fullscreen.lock="loading" As a service>
+            </el-button>
+        </div>
+        <el-alert v-if="serverAddressError" title="ERROR!" type="error" v-bind:description="errorMsg" show-icon>
+        </el-alert>
+        <div class="devices-list">
+            <el-table :data="tableData" height="300px" style="width: 100%">
+                <el-table-column prop="devicesID" label="DevicesID">
+                </el-table-column>
+                <el-table-column prop="deviceBrand" label="DeviceBrand">
+                </el-table-column>
+                <el-table-column prop="ipAddress" label="IpAddress">
+                </el-table-column>
+                <el-table-column prop="systemModel" label="SystemModel">
+                </el-table-column>
+            </el-table>
+        </div>
+        <!-- <div> </div> -->
+        <!-- <el-input id="console-info" placeholder="waiting for connect to server" v-model="consoleMsg" :disabled="true"
+            type="textarea" rows="5">
+        </el-input> -->
+    </div>
+
+</body>
+<script>
+    var vm = new Vue({
+        el: "#window",
+        methods: {
+            renderTitle: function () {},
+            searchDevices: function () {
+                if (!this.input) {
+                    this.serverAddressError = true;
+                    this.errorMsg = "server address error, plz check then try again"
+                    return;
+                }
+                this.loading = true;
+                console.log(this.input);
+                setTimeout(() => {
+                    fetchDevices();
+                }, 1000);
+            },
+            pingAIm: function (address) {
+
+            }
+        },
+        data() {
+            return {
+                defalutValue: "hc",
+                input: "192.168.0.104",
+                loading: false,
+                tableData: [],
+                serverAddressError: false,
+                errorMsg: '',
+                consoleMsg: ''
+            }
+        },
+    })
+
+    function fetchDevices() {
+        Promise.race([
+                fetch(`http://${vm.input}:3000/devices`),
+                new Promise(function (resolve, reject) {
+                    setTimeout(() => reject(new Error('request timeout')), 2000)
+                })
+            ]).then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                vm.serverAddressError = false;
+                vm.tableData = [];
+                data.data.forEach(element => {
+                    vm.tableData.push(JSON.parse(element).detail);
+                });
+                console.log(vm.tableData);
+                vm.loading = false;
+            }).catch((err) => {
+                console.log(err);
+                vm.serverAddressError = true;
+                vm.errorMsg = err.toString();
+                vm.loading = false;
+            })
+    }
+
+    function setConsoleText(text) {
+        let now = new Date().toLocaleString();
+
+        if (vm.consoleMsg.length == 0) {
+            vm.consoleMsg = now + ": " + text;
+        } else {
+            vm.consoleMsg = vm.consoleMsg + "\n" + now + ": " + text;
+        }
+        setCss();
+    }
+
+    function connectSocketServer() {
+        var socket = io('http://' + vm.input + ':3000');
+        socket.on('connect', function () {
+            console.log('connect 2 server successfully');
+            setConsoleText('connect 2 server successfully');
+        });
+        socket.on('event', function (data) {});
+        socket.on('disconnect', function () {
+            console.log('disconnect 2 server');
+        });
+    }
+</script>
+
+</html>
