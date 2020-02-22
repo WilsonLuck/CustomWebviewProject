@@ -21,12 +21,12 @@
     "code": 200,
 	"msg":"success"
 	"data":
-				{
-  				 "deviceBrand":"OnePlus",
-  	 			"devicesID":"ucHuyQ6fAQ7je59UAAAA",
-  				 "ipAddress":"192.168.0.108",
- 				  "systemModel":"ONEPLUS A6010"
-				  }
+		{
+  		"deviceBrand":"OnePlus",
+  	 	"devicesID":"ucHuyQ6fAQ7je59UAAAA",
+  		"ipAddress":"192.168.0.108",
+ 		"systemModel":"ONEPLUS A6010"
+		}
   }
 ```
 
@@ -45,10 +45,10 @@
 **请求方式：**
 - POST 
 
-**请求参数参数：** 
+**请求参数参数** 
 
 |参数名|类型|是否必须|说明|
-|:-----  |:-----|:----------                           |
+|:-----  |:-----|:-----|:----------                           |
 |devicesID |string   |flase|设备ID，用于向具体设备发送指令，如果不填，默认向所有设备发送指令  |
 |url |string   |true|目标URL，“http://127.0.0.1:3000/getTest/”  |
 |method |string   |flase|请求参数，GET、POST  |
@@ -64,8 +64,6 @@
 |blockUrlPattern |string   |flase|正则表达式， 如果被访问的页面进行某种形式的 跳转(javascript重定向，meta refresh等)，如果跳转的网页符合block_url_pattern ，则直接返回网址|
 |javascriptCode |string   |flase|正则表达式列表， 如果被访问的页面 有多个XHR请求， 并且XHR请求的网址符合​ block_xhr_request_pattern， 则返回并且 拦截XHR的请求数据  |
 
-
-
  **返回示例**
 
 ```
@@ -74,66 +72,65 @@
 	"msg":"success"
 	"data":[
 		{
-        "html": "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">get successundefined</pre></body></html>",
-        "responseHeaders": [
-            {
-                "key": "connection",
-                "value": "keep-alive"
-            },
-            {
-                "key": "content-length",
-                "value": "20"
-            },
-            {
-                "key": "content-type",
-                "value": "text/html; charset=utf-8"
-            },
-            {
-                "key": "date",
-                "value": "Sat, 22 Feb 2020 07:20:12 GMT"
-            },
-            {
-                "key": "etag",
-                "value": "W/\"14-egV51QIW9Fh6WBssjF7NgB25Ckg\""
-            },
-            {
-                "key": "x-powered-by",
-                "value": "Express"
-            }
-        ],
-        "screenshot": "iVBORw0KGgoAAAANSUhEUgAABDgAAAgCCAIAAAABM7VnAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4nOzdd1wUd+L/8aFKU0BUFARREQVEUFDBFo0xGhvGWFM0xngmeqYnxtzl7kxMvUtPjDGJOTW2qLEjltiVYFcUpapIEREQ6f33x/5uvuvM7oKwCx/09Xz4xzo789nPzs4u8575FDPpg/kSAAAAAIjEvLErAAAAAABKBBUAAAAAwiGoAAAAABAOQQUAAACAcAgqAAAAAIRDUAEAAAAgHIIKAAAAAOEQVAAAAAAIh6ACAAAAQDgEFQAAAADCIagAAAAAEA5BBQAAAIBwCCoAAAAAhENQAQAAACAcggoAAAAA4RBUAAAAAAiHoAIAAABAOAQ,
-		"url": "http://192.168.0.104:3000/gettest"
-		},
+       		 "html": "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">get successundefined</pre></body></html>",
+      		  "responseHeaders": [
+         	   {
+            	    "key": "connection",
+             	    "value": "keep-alive"
+          	   },
+          	   {
+            	    "key": "content-length",
+            	    "value": "20"
+           	   },
+                   {
+                    "key": "content-type",
+                    "value": "text/html; charset=utf-8"
+            	   },
+            	   {
+                   "key": "date",
+                   "value": "Sat, 22 Feb 2020 07:20:12 GMT"
+            	   },
+            	   {
+                   "key": "etag",
+                   "value": "W/\"14-egV51QIW9Fh6WBssjF7NgB25Ckg\""
+                   },
+                   {
+                   "key": "x-powered-by",
+                   "value": "Express"
+          	   }],
+       		 "screenshot": "iVBORw0KGgoAAAANSUhEUgAABDgAAAgCCAIAAAABM7VnAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4nOzdd1wUd+L/8aFKU0BUFARREQVEUFDBFo0xGhvGWFM0xngmeqYnxtzl7kxMvUtPjDGJOTW2qLEjltiVYFcUpapIEREQ6f33x/5uvuvM7oKwCx/09Xz4xzo789nPzs4u8575FDPpg/kSAAAAAIjEvLErAAAAAABKBBUAAAAAwiGoAAAAABAOQQUAAACAcAgqAAAAAIRDUAEAAAAgHIIKAAAAAOEQVAAAAAAIh6ACAAAAQDgEFQAAAADCIagAAAAAEA5BBQAAAIBwCCoAAAAAhENQAQAAACAcggoAAAAA4RBUAAAAAAiHoAIAAABAOAQ,
+		 "url": "http://192.168.0.104:3000/gettest"
+		 },
 		{
-        "html": "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">get successundefined</pre></body></html>",
-        "responseHeaders": [
-            {
-                "key": "connection",
-                "value": "keep-alive"
-            },
-            {
-                "key": "content-length",
-                "value": "20"
-            },
-            {
-                "key": "content-type",
-                "value": "text/html; charset=utf-8"
-            },
-            {
-                "key": "date",
-                "value": "Sat, 22 Feb 2020 07:20:12 GMT"
-            },
-            {
-                "key": "etag",
-                "value": "W/\"14-egV51QIW9Fh6WBssjF7NgB25Ckg\""
-            },
-            {
-                "key": "x-powered-by",
-                "value": "Express"
-            }
-        ],
-        "screenshot": "iVBORw0KGgoAAAANSUhEUgAABDgAAAgCCAIAAAABM7VnAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4nOzdd1wUd+L/8aFKU0BUFARREQVEUFDBFo0xGhvGWFM0xngmeqYnxtzl7kxMvUtPjDGJOTW2qLEjltiVYFcUpapIEREQ6f33x/5uvuvM7oKwCx/09Xz4xzo789nPzs4u8575FDPpg/kSAAAAAIjEvLErAAAAAABKBBUAAAAAwiGoAAAAABAOQQUAAACAcAgqAAAAAIRDUAEAAAAgHIIKAAAAAOEQVAAAAAAIh6ACAAAAQDgEFQAAAADCIagAAAAAEA5BBQAAAIBwCCoAAAAAhENQAQAAACAcggoAAAAA4RBUAAAAAAiHoAIAAABAOAQ,
-		"url": "http://192.168.0.104:3000/gettest"		},
+       		 "html": "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">get successundefined</pre></body></html>",
+      		  "responseHeaders": [
+         	   {
+            	    "key": "connection",
+             	    "value": "keep-alive"
+          	   },
+          	   {
+            	    "key": "content-length",
+            	    "value": "20"
+           	   },
+                   {
+                    "key": "content-type",
+                    "value": "text/html; charset=utf-8"
+            	   },
+            	   {
+                   "key": "date",
+                   "value": "Sat, 22 Feb 2020 07:20:12 GMT"
+            	   },
+            	   {
+                   "key": "etag",
+                   "value": "W/\"14-egV51QIW9Fh6WBssjF7NgB25Ckg\""
+                   },
+                   {
+                   "key": "x-powered-by",
+                   "value": "Express"
+          	   }],
+       		 "screenshot": "iVBORw0KGgoAAAANSUhEUgAABDgAAAgCCAIAAAABM7VnAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4nOzdd1wUd+L/8aFKU0BUFARREQVEUFDBFo0xGhvGWFM0xngmeqYnxtzl7kxMvUtPjDGJOTW2qLEjltiVYFcUpapIEREQ6f33x/5uvuvM7oKwCx/09Xz4xzo789nPzs4u8575FDPpg/kSAAAAAIjEvLErAAAAAABKBBUAAAAAwiGoAAAAABAOQQUAAACAcAgqAAAAAIRDUAEAAAAgHIIKAAAAAOEQVAAAAAAIh6ACAAAAQDgEFQAAAADCIagAAAAAEA5BBQAAAIBwCCoAAAAAhENQAQAAACAcggoAAAAA4RBUAAAAAAiHoAIAAABAOAQ,
+		 "url": "http://192.168.0.104:3000/gettest"
+		 },
 	]
   }
 ```
