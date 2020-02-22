@@ -16,6 +16,7 @@ import com.google.gson.Gson
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.api.InternalOkHttpClient
 import com.play.accessabilityservice.api.WebviewProxySetting
+import com.play.accessabilityservice.api.data.Header
 import com.play.accessabilityservice.api.data.ProxyDTO
 import com.play.accessabilityservice.api.data.RequestDTO
 import com.play.accessabilityservice.api.data.ResponseDTO
@@ -111,14 +112,29 @@ class WebviewActivity : AppCompatActivity() {
             if (p1 == 100) {
                 Logger.i("onProgress Render Completed")
                 progressBar.visibility = View.GONE//加载完网页进度条消失
-                img2Base64 = ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
-                val responseDTO = ResponseDTO(currentLoadURL, responseHeaders, html, img2Base64)
                 GlobalScope.async {
                     delay(5000)
+                    img2Base64 =
+                        ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
+                            .replace("\n", "")
+
+                    val newResponseHeaders = mutableListOf<Header>()
+                    responseHeaders.forEach {
+                        newResponseHeaders.add(
+                            Header(
+                                it.key,
+                                it.value.toString().replace("[", "").replace("]", "")
+                            )
+                        )
+                    }
+
+                    val responseDTO =
+                        ResponseDTO(currentLoadURL, newResponseHeaders, html, img2Base64)
                     SocketConductor.instance.socket!!.emit(
                         requestDTO.uuid4socketEvent,
                         Gson().toJson(responseDTO)
                     ).apply {
+                        Logger.i(Gson().toJson(responseDTO))
                         val nextIntent = Intent()
                         nextIntent.putExtra("next", true)
                         this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
@@ -179,7 +195,7 @@ class WebviewActivity : AppCompatActivity() {
             if (requestDTO.url == request.url.toString()) {
                 return try {
                     InternalOkHttpClient.modifyRequest(request, requestDTO) {
-                        responseHeaders.putAll((it[InternalOkHttpClient.KEY_RESPONSE_HEADERS] as Headers).toMultimap() )
+                        responseHeaders.putAll((it[InternalOkHttpClient.KEY_RESPONSE_HEADERS] as Headers).toMultimap())
                     }
                 } catch (e: java.lang.Exception) {
                     super.shouldInterceptRequest(view, request)

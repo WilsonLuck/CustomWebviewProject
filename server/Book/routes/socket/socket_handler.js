@@ -179,12 +179,12 @@ module.exports = class SocketHandler {
                     .emit('hook_params', requestDatas)
                     .once(this.uuid4socketEvent, (datas) => {
                         clearTimeout(timer);
-
-                        console.log(JSON.stringify(datas));
+                        let encode = new TextEncoder('utf-8');
+                        console.log(datas);
                         this.res.status(200).json({
                             msg: "success",
                             code: 200,
-                            data: datas
+                            data: JSON.parse(datas)
                         });
                         global.resLogger.info({
                             headers: this.res._header,
