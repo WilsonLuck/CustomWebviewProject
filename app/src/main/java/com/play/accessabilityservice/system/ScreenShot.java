@@ -2,11 +2,14 @@ package com.play.accessabilityservice.system;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
+
+import com.play.accessabilityservice.util.ImageCompress;
 
 import java.io.ByteArrayOutputStream;
 
@@ -40,12 +43,14 @@ public class ScreenShot {
         view.destroyDrawingCache();
         view.setDrawingCacheEnabled(false);
 
-        return bitmap;
+        Matrix matrix = new Matrix();
+        matrix.postScale(0.5f, 0.5f);//长和宽放大缩小的比例
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
     public static String Bitmap2Base64(Bitmap bitmap) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+        bitmap.compress(Bitmap.CompressFormat.PNG, 60, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(byteArray, Base64.DEFAULT);
     }

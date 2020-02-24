@@ -1,13 +1,16 @@
 package com.play.accessabilityservice.api
 
-import com.google.gson.Gson
+import android.content.Context
+import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.BuildConfig
-import com.play.accessabilityservice.api.data.ProxyDTO
+import com.play.accessabilityservice.WebviewActivity
 import com.play.accessabilityservice.api.data.RequestDTO
+import com.play.accessabilityservice.util.StreamHelper
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
 import com.tencent.smtt.export.external.interfaces.WebResourceResponse
 import okhttp3.*
-import java.net.InetSocketAddress
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
@@ -36,9 +39,11 @@ class InternalOkHttpClient {
         fun modifyRequest(
             originRequest: WebResourceRequest,
             requestDTO: RequestDTO,
+            context: Context,
+            myJavaScriptInterface: WebviewActivity.MyJavaScriptInterface,
             action: (sourceMap: MutableMap<String, Any>) -> Unit = {}
         ): WebResourceResponse {
-
+            Logger.i("start modifyRequest")
             var sourceMap = mutableMapOf<String, Any>()
 
             val oldUri = originRequest.url
@@ -121,21 +126,83 @@ class InternalOkHttpClient {
                         newRequest.newBuilder().removeHeader(key).addHeader(key, value).build()
                 }
             }
-
             response = okHttpClient.newCall(newRequest).execute()
             sourceMap[KEY_REQUEST_HEADERS] = newRequest.headers()
             response.headers().toMultimap()
             sourceMap[KEY_RESPONSE_HEADERS] = response.headers()
             action(sourceMap)
             okHttpClient = okHttpClient.newBuilder().proxy(Proxy.NO_PROXY).build()
-            return WebResourceResponse(
-                response.header(
-                    "text/html",
-                    response.body()!!.contentType()!!.type()
-                ), // You can set something other as default content-type
-                response.header("content-encoding", "utf-8"),
-                response.body()!!.byteStream()
+
+            return injectIntercept(
+                WebResourceResponse(
+                    "text/html", // You can set something other as default content-type
+                    response.header("content-encoding", "utf-8"),
+                    response.body()!!.byteStream()
+                ), context = context, myJavaScriptInterface = myJavaScriptInterface
             )
         }
+
+        /**
+         * 如果请求是网页，则html注入
+         *
+         * @param response
+         * @param context
+         * @return
+         */
+        private fun injectIntercept(
+            response: WebResourceResponse,
+            context: Context,
+            myJavaScriptInterface: WebviewActivity.MyJavaScriptInterface
+
+        ): WebResourceResponse {
+            val encoding = response.encoding
+            var mime = response.mimeType
+
+            // WebResourceResponse的mime必须为"text/html",不能是"text/html; charset=utf-8"
+            if (mime.contains("text/html")) {
+                mime = "text/html"
+            }
+
+            val responseData = response.data
+            val injectedResponseData = injectInterceptToStream(
+                context,
+                responseData,
+                mime,
+                myJavaScriptInterface
+            )
+            return WebResourceResponse(mime, encoding, injectedResponseData)
+        }
+
+        /**
+         * 如果请求是网页，则html注入
+         *
+         * @param context
+         * @param is
+         * @param mime
+         * @param charset
+         * @return
+         */
+        private fun injectInterceptToStream(
+            context: Context,
+            `is`: InputStream,
+            mime: String,
+            myJavaScriptInterface: WebviewActivity.MyJavaScriptInterface
+        ): InputStream {
+            try {
+                var pageContents = StreamHelper.consumeInputStream(`is`)
+                if (mime.contains("text/html")) {
+                    pageContents = myJavaScriptInterface
+                        .enableIntercept(context, pageContents)
+                        .toByteArray()
+                }
+
+                return ByteArrayInputStream(pageContents)
+            } catch (e: Exception) {
+                throw RuntimeException(e.message)
+            }
+
+        }
     }
+
+
 }

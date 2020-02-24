@@ -1,0 +1,35 @@
+<script src="https://unpkg.com/ajax-hook/dist/ajaxhook.min.js"></script>
+
+<script language="JavaScript">
+    // This only works if `open` and `send` are called in a synchronous way
+    // That is, after calling `open`, there must be no other call to `open` or
+    // `send` from another place of the code until the matching `send` is called.
+    requestID = null;
+    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function (body) {
+        console.log("")
+        HTMLOUT.xhrSend(requestID, body);
+        this.reallySend(body);
+    };
+
+    function generateRandom() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+    }
+    hookAjax({
+        onreadystatechange: function (xhr) {
+            console.log("onreadystatechange called: %O", xhr);
+            HTMLOUT.onreadystatechange(`onreadystatechange: ${JSON.stringify(xhr)}`);
+        },
+        onload: function (xhr) {
+            HTMLOUT.onLoad(JSON.stringify(xhr));
+        },
+        open: function (arg, xhr) {
+            requestID = generateRandom();
+            console.log(`open called: method:${arg[0]},url${arg[1]},async:${arg[2]}`);
+            HTMLOUT.xhrOpen(arg[0], arg[1], requestID);
+        },
+    });
+</script>

@@ -1,6 +1,5 @@
 package com.play.accessabilityservice
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -16,21 +15,25 @@ import com.google.gson.Gson
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.api.InternalOkHttpClient
 import com.play.accessabilityservice.api.WebviewProxySetting
-import com.play.accessabilityservice.api.data.Header
-import com.play.accessabilityservice.api.data.ProxyDTO
-import com.play.accessabilityservice.api.data.RequestDTO
-import com.play.accessabilityservice.api.data.ResponseDTO
+import com.play.accessabilityservice.api.data.*
 import com.play.accessabilityservice.socket.SocketConductor
 import com.play.accessabilityservice.system.ScreenShot
+import com.play.accessabilityservice.util.StreamHelper
+import com.play.accessabilityservice.webview.WebSettingsConfig
 import com.tencent.smtt.export.external.interfaces.WebResourceError
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
 import com.tencent.smtt.export.external.interfaces.WebResourceResponse
-import com.tencent.smtt.sdk.*
+import com.tencent.smtt.sdk.CookieManager
+import com.tencent.smtt.sdk.WebChromeClient
+import com.tencent.smtt.sdk.WebView
+import com.tencent.smtt.sdk.WebViewClient
 import kotlinx.android.synthetic.main.activity_webview.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import okhttp3.Headers
+import org.jsoup.Jsoup
+import java.io.IOException
 import java.io.Serializable
 import java.net.Proxy
 import java.util.regex.Pattern
@@ -55,40 +58,36 @@ class WebviewActivity : AppCompatActivity() {
         }
     }
 
+    private val MARKER = "AJAXINTERCEPT"
+
+    //请求参数Map集
+    private val ajaxRequestContents = mutableMapOf<String, XhrDTO>()
+    //webhook的请求参数
     val requestDTO: RequestDTO by lazy {
         intent.getSerializableExtra("requestDTO") as RequestDTO
     }
 
+    //当前加载的 url
     var currentLoadURL = ""
+
+    //拦截后返回的 headers
     var responseHeaders = mutableMapOf<String, MutableList<String>>()
+    //bitmap base64编码
     var img2Base64 = ""
+    //渲染后的html代码
     var html = ""
+    var myJavaScriptInterface = MyJavaScriptInterface()
+    //返回给socket的具体信息
+    var responseDTO = ResponseDTO()
+    //被block的Xhr请求
+    var xhrBlockList = mutableListOf<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_webview)
 
-        val webSetting = webview.settings
-        webSetting.allowFileAccess = true
-        webSetting.layoutAlgorithm = WebSettings.LayoutAlgorithm.NARROW_COLUMNS
-        webSetting.setSupportZoom(true)
-        webSetting.builtInZoomControls = true
-        webSetting.useWideViewPort = true
-        webSetting.setSupportMultipleWindows(false)
-        // webSetting.setLoadWithOverviewMode(true);
-        webSetting.setAppCacheEnabled(true)
-        webSetting.databaseEnabled = true
-        webSetting.domStorageEnabled = true
-        webSetting.javaScriptEnabled = true
-        webSetting.setGeolocationEnabled(true)
-        webSetting.setAppCacheMaxSize(Long.MAX_VALUE)
-        webSetting.setAppCachePath(this.getDir("appcache", 0).path)
-        webSetting.databasePath = this.getDir("databases", 0).path
-        webSetting.setGeolocationDatabasePath(
-            this.getDir("geolocation", 0)
-                .path
-        )
-        webSetting.pluginState = WebSettings.PluginState.ON_DEMAND
-        webview.addJavascriptInterface(MyJavaScriptInterface(), "HTMLOUT")
+        WebSettingsConfig.setConfig(webview)
+        webview.addJavascriptInterface(myJavaScriptInterface, "HTMLOUT")
         webview.webViewClient = WBClient()
         webview.webChromeClient = WBChromeClient()
 
@@ -105,15 +104,18 @@ class WebviewActivity : AppCompatActivity() {
         } else {
             webview.postUrl(requestDTO.url, requestDTO.formData.toByteArray())
         }
+//        webview.loadDataWithBaseURL( null, myJavaScriptInterface.enableIntercept(this), "text/html", "utf-8", null );
+
     }
 
     inner class WBChromeClient : WebChromeClient() {
+
         override fun onProgressChanged(p0: WebView?, p1: Int) {
             if (p1 == 100) {
                 Logger.i("onProgress Render Completed")
                 progressBar.visibility = View.GONE//加载完网页进度条消失
                 GlobalScope.async {
-                    delay(5000)
+                    delay(3000)
                     img2Base64 =
                         ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
                             .replace("\n", "")
@@ -128,17 +130,18 @@ class WebviewActivity : AppCompatActivity() {
                         )
                     }
 
-                    val responseDTO =
-                        ResponseDTO(currentLoadURL, newResponseHeaders, html, img2Base64)
+                    ajaxRequestContents
+                    val res = responseDTO.copy(currentLoadURL, newResponseHeaders, html, img2Base64)
+
                     SocketConductor.instance.socket!!.emit(
                         requestDTO.uuid4socketEvent,
-                        Gson().toJson(responseDTO)
+                        Gson().toJson(res)
                     ).apply {
-                        Logger.i(Gson().toJson(responseDTO))
-                        val nextIntent = Intent()
-                        nextIntent.putExtra("next", true)
-                        this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
-                        finish()
+                        //                        Logger.i(Gson().toJson(responseDTO))
+//                        val nextIntent = Intent()
+//                        nextIntent.putExtra("next", true)
+//                        this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
+//                        finish()
                     }
                 }
 
@@ -171,6 +174,10 @@ class WebviewActivity : AppCompatActivity() {
             Logger.e("onReceivedError" + error!!.description)
             super.onReceivedError(view, request, error)
         }
+        /**
+         ** This here is the "fixed" shouldInterceptRequest method that you should override.
+         ** It receives a WriteHandlingWebResourceRequest instead of a WebResourceRequest.
+         */
 
         /**
          * 拦截请求
@@ -183,27 +190,36 @@ class WebviewActivity : AppCompatActivity() {
             Logger.i("shouldInterceptRequest headers: ${request!!.requestHeaders}")
             Logger.i("shouldInterceptRequest urls : ${request.url}")
 
-            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
-                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
-                val matecher = pattern.matcher(request.url.toString())
-                if (matecher.find())
-                    Logger.i("find blockXhrRequestPattern return the request")
-                return null
-            }
 
             //当webview请求的url和需求请求的url一致才会进行拦截
             if (requestDTO.url == request.url.toString()) {
-                return try {
-                    InternalOkHttpClient.modifyRequest(request, requestDTO) {
+                var response: WebResourceResponse
+                try {
+                    response = InternalOkHttpClient.modifyRequest(
+                        request,
+                        requestDTO,
+                        this@WebviewActivity,
+                        myJavaScriptInterface
+                    ) {
                         responseHeaders.putAll((it[InternalOkHttpClient.KEY_RESPONSE_HEADERS] as Headers).toMultimap())
                     }
+
+                    return response
                 } catch (e: java.lang.Exception) {
                     super.shouldInterceptRequest(view, request)
                 }
 
-            } else {
-                return super.shouldInterceptRequest(view, request)
             }
+            val res = super.shouldInterceptRequest(view, request)
+            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
+                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
+                val matecher = pattern.matcher(request.url.toString())
+                if (matecher.find()) {
+                    Logger.i("find blockXhrRequestPattern return the request")
+                }
+                return null
+            }
+            return res
         }
 
         /**
@@ -216,6 +232,7 @@ class WebviewActivity : AppCompatActivity() {
             }
             Logger.i("current url is :$url")
             view!!.loadUrl("javascript:HTMLOUT.processHTML(document.documentElement.outerHTML);")
+            super.onPageFinished(view, url)
         }
 
         override fun shouldOverrideUrlLoading(p0: WebView?, p1: WebResourceRequest?): Boolean {
@@ -236,7 +253,7 @@ class WebviewActivity : AppCompatActivity() {
 
             Logger.i("shouldOverrideUrlLoading${p1!!.url}")
             try {
-                if (!p1!!.url.toString().startsWith("http://") && !p1.url.toString().startsWith("https://")) {
+                if (!p1.url.toString().startsWith("http://") && !p1.url.toString().startsWith("https://")) {
                     var intent = Intent(Intent.ACTION_VIEW, Uri.parse(p1.url.toString()))
                     startActivity(intent)
                     return true
@@ -254,20 +271,21 @@ class WebviewActivity : AppCompatActivity() {
 
         override fun onLoadResource(p0: WebView?, p1: String?) {
             Logger.i("onLoadResource:$p1")
-            /*
-            拦截xhr请求
-             */
-            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
-                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
-                val matecher = pattern.matcher(p1)
-                if (matecher.find())
-                    Logger.i("find blockXhrRequestPattern return the request")
-                return
-            }
+//            /*
+//            拦截xhr请求
+//             */
+//            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
+//                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
+//                val matecher = pattern.matcher(p1)
+//                if (matecher.find())
+//                    Logger.i("find blockXhrRequestPattern return the request")
+//                return
+//            }
             super.onLoadResource(p0, p1)
         }
 
         override fun onPageStarted(p0: WebView?, p1: String?, p2: Bitmap?) {
+
             if (requestDTO.proxy.isNotBlank()) {
                 var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
                 var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
@@ -288,7 +306,34 @@ class WebviewActivity : AppCompatActivity() {
 
     }
 
+    /**
+     * js脚本
+     */
     inner class MyJavaScriptInterface {
+        private var interceptHeader: String? = null
+
+        @Throws(IOException::class)
+        fun enableIntercept(context: Context, data: ByteArray): String {
+            if (interceptHeader == null) {
+                interceptHeader = String(
+                    StreamHelper.consumeInputStream(context.assets.open("interceptheader.html"))
+                )
+            }
+
+            val doc = Jsoup.parse(String(data))
+            doc.outputSettings().prettyPrint(true)
+
+            // Prefix every script to capture submits
+            // Make sure our interception is the first element in the
+            // header
+            val element = doc.getElementsByTag("head")
+            if (element.size > 0) {
+                element[0].prepend(interceptHeader)
+            }
+
+            return doc.toString()
+        }
+
         @JavascriptInterface
         fun processHTML(html: String) {
             Logger.i(html)
@@ -296,9 +341,31 @@ class WebviewActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun changeA1() {
-
+        fun xhrSend(requestID: String, body: String) {
+            Logger.i("ajax xhrSend id:${requestID} body:$body")
+            if (ajaxRequestContents[requestID] != null && body.isNotEmpty()) {
+                ajaxRequestContents[requestID]!!.body = body
+            }
         }
+
+        /**
+         * xhr请求 open
+         */
+        @JavascriptInterface
+        fun xhrOpen(method: String, url: String, requestID: String) {
+            ajaxRequestContents[requestID] = XhrDTO(method, url)
+            Logger.i("ajax xhrOpen method:$method url:$url requestID:$requestID")
+        }
+
+        @JavascriptInterface
+        fun onLoad(xhr: String) {
+            Logger.i("ajax onLoad: ${xhr}")
+        }
+
+        @JavascriptInterface
+        fun onreadystatechange(xhr: String) {
+        }
+
     }
 
     override fun onDestroy() {

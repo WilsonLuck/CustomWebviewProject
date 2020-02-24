@@ -141,6 +141,24 @@ module.exports = class SocketHandler {
             /**
              * 如果设备没有连接，直接return
              */
+            var responseDats = [];
+            let requestDatas = JSON.stringify({
+                url: this.url,
+                method: this.method,
+                postContentType: this.postContentType,
+                formData: this.formData,
+                proxy: this.proxy,
+                sendHeaders: this.sendHeaders,
+                getHeaders: this.getHeaders,
+                getUrl: this.getUrl,
+                clearCookie: this.clearCookie,
+                javascriptCode: this.javascriptCode,
+                screenshot: this.screenshot,
+                blockUrlPattern: this.blockUrlPattern,
+                blockXhrRequestPattern: this.blockXhrRequestPattern,
+                uuid4socketEvent: this.uuid4socketEvent
+            });
+            console.log(requestDatas);
             if (this.devicesID) {
                 if (global.sockets
                     .get(this.devicesID) == null) {
@@ -157,34 +175,21 @@ module.exports = class SocketHandler {
                     });
                     return;
                 };
-                let requestDatas = JSON.stringify({
-                    url: this.url,
-                    method: this.method,
-                    postContentType: this.postContentType,
-                    formData: this.formData,
-                    proxy: this.proxy,
-                    sendHeaders: this.sendHeaders,
-                    getHeaders: this.getHeaders,
-                    getUrl: this.getUrl,
-                    clearCookie: this.clearCookie,
-                    javascriptCode: this.javascriptCode,
-                    screenshot: this.screenshot,
-                    blockUrlPattern: this.blockUrlPattern,
-                    blockXhrRequestPattern: this.blockXhrRequestPattern,
-                    uuid4socketEvent: this.uuid4socketEvent
-                });
-                console.log(requestDatas);
+
                 let client = global.sockets
                     .get(this.devicesID)
                     .emit('hook_params', requestDatas)
                     .once(this.uuid4socketEvent, (datas) => {
+                        responseDats.push(JSON.parse(datas));
+                        responseDats.push(JSON.parse(datas));
+
                         clearTimeout(timer);
                         let encode = new TextEncoder('utf-8');
                         console.log(datas);
                         this.res.status(200).json({
                             msg: "success",
                             code: 200,
-                            data: JSON.parse(datas)
+                            data: responseDats
                         });
                         global.resLogger.info({
                             headers: this.res._header,
@@ -214,6 +219,60 @@ module.exports = class SocketHandler {
                     });
                     console.log('time delay 3000ms');
                 }, 50000);
+            } else {
+                // for (i; i < global.userInfo.length; i++) {
+                global.sockets.forEach(((client) => {
+                    client.emit('hook_params', requestDatas)
+                        .once(this.uuid4socketEvent, (datas) => {
+                            responseDats.push(JSON.parse(datas));
+                            console.log("current length =" + responseDats.length + "global size :" + global.sockets.size);
+                            if (responseDats.length == global.sockets.size) {
+                                clearTimeout(timer);
+                                console.log(datas);
+                                this.res.status(200).json({
+                                    msg: "success",
+                                    code: 200,
+                                    data: responseDats
+                                });
+                                global.resLogger.info({
+                                    headers: this.res._header,
+                                    data: datas
+                                });
+                            }
+                        });
+                }));
+                // global.sockets[i]
+                // }
+
+                /**
+                 * 如果30s还没有回馈 直接返回timeout给请求客户端
+                 */
+                let timer = setTimeout(() => {
+
+                    if (responseDats.length != global.sockets.length && responseDats.length > 0) {
+                        this.res.status(200).json({
+                            msg: "success",
+                            code: 200,
+                            data: responseDats
+                        });
+                        return
+                    } else {
+                        this.res.status(200).json({
+                            code: 408,
+                            msg: 'Request TimeOut',
+                            data: ''
+                        });
+                    }
+                    global.resLogger.info({
+                        headers: this.res._header,
+                        code: 408,
+                        msg: 'Request TimeOut',
+                        data: responseDats
+                    });
+
+                    removeAllLitenerByUUID(this.uuid4socketEvent);
+                    console.log('time delay 3000ms');
+                }, 30000);
             }
 
         } catch (error) {
@@ -225,5 +284,15 @@ module.exports = class SocketHandler {
                 data: ''
             })
         }
+    }
+    /**
+     * 移除所有socket里的监听器
+     */
+    removeAllLitenerByUUID(uuid4socketEvent) {
+        global.sockets.forEach((client) => {
+            client.removeAllListeners(uuid4socketEvent, () => {
+                console.log('remove success')
+            });
+        });
     }
 }

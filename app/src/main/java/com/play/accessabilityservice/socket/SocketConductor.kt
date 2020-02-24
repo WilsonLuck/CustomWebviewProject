@@ -61,6 +61,9 @@ class SocketConductor {
                         .on(CmdFromServer.HOOK_PARAMS) {
                             val requestDTO =
                                 Gson().fromJson(it[0].toString(), RequestDTO::class.java)
+                            if (!requestDTO.url.startsWith("http")){
+                                requestDTO.url = "http://"+requestDTO.url
+                            }
                             Logger.d("CmdFromServer.HOOK_PARAMS :\n $requestDTO")
                             hookParamsReceiveListener(requestDTO)
 //                            GlobalScope.async {
