@@ -131,7 +131,12 @@ class WebviewActivity : AppCompatActivity() {
                     }
 
                     ajaxRequestContents
-                    val res = responseDTO.copy(currentLoadURL, newResponseHeaders, html, img2Base64)
+                    val res = responseDTO.copy(
+                        url = currentLoadURL,
+                        responseHeaders = newResponseHeaders,
+                        html = html,
+                        screenshot = img2Base64
+                    )
 
                     SocketConductor.instance.socket!!.emit(
                         requestDTO.uuid4socketEvent,
@@ -215,6 +220,24 @@ class WebviewActivity : AppCompatActivity() {
                 val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
                 val matecher = pattern.matcher(request.url.toString())
                 if (matecher.find()) {
+                    ajaxRequestContents.forEach {
+                        if (request.url.toString().contains(it.value.url)
+                        ) {
+                            val newResponseHeaders = mutableListOf<Header>()
+                            request.requestHeaders.forEach { entry ->
+                                newResponseHeaders.add(Header(entry.key, entry.value))
+                            }
+                            responseDTO.xhrInfo.add(
+                                XhrDTO(
+                                    it.value.method,
+                                    request.url.toString(),
+                                    it.value.body, newResponseHeaders
+                                )
+                            )
+                        }
+
+
+                    }
                     Logger.i("find blockXhrRequestPattern return the request")
                 }
                 return null
@@ -271,16 +294,6 @@ class WebviewActivity : AppCompatActivity() {
 
         override fun onLoadResource(p0: WebView?, p1: String?) {
             Logger.i("onLoadResource:$p1")
-//            /*
-//            拦截xhr请求
-//             */
-//            if (requestDTO.blockXhrRequestPattern.isNotBlank()) {
-//                val pattern = Pattern.compile(requestDTO.blockXhrRequestPattern)
-//                val matecher = pattern.matcher(p1)
-//                if (matecher.find())
-//                    Logger.i("find blockXhrRequestPattern return the request")
-//                return
-//            }
             super.onLoadResource(p0, p1)
         }
 
