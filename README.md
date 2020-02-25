@@ -2,6 +2,11 @@
 - ----app Android客户端源码
 - ----electron-quick-start 桌面端，监控设备列表，连接后自动刷新
 - ----server/Book 服务器
+# 基础环境
+[Node.js](https://nodejs.org/)</br>
+[Android SDK](https://developer.android.com/studio)</br>
+[Gradle](https://developer.android.com/studio)</br>
+[JDK1.8]</br>
 # Usage
 ## 一、客户端
 ### Base Environment
