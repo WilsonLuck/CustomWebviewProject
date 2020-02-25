@@ -20,13 +20,20 @@ var server = http.createServer(door);
 var socket = require('socket.io')(server);
 global.sockets = new Map();
 global.userInfo = [];
+global.electron = null;
 socket.on('connection', (client) => {
   console.log('new client connected');
   client.on('system_info', (args) => {
       console.log(args);
       saveUserInfo(client, args);
+      if (global.electron) {
+        global.electron.emit('refresh');
+      }
     })
     .on("disconnect", (reason) => {
+      if (global.electron) {
+        global.electron.emit('refresh');
+      }
       console.log(`disconnect ${reason}`);
       console.log("need delete device:" + client.id);
       global.sockets.delete(client.id);
@@ -42,7 +49,11 @@ socket.on('connection', (client) => {
     .on('disconnecting', (reson) => {
       console.log("disconnecting");
 
-    });
+    })
+    .on("electron client connected", (data) => {
+      console.log("electron client connected");
+      global.electron = client;
+    })
   var datas = ["hc", "\"name\":\"12\""];
   client.emit("cmd", datas);
 });
