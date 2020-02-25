@@ -5,6 +5,19 @@
 |  40000|  无设备连接|
 |  40001 | 缺失参数  |
 
+# 写在前面
+[Java正则与PhP区别，blockUrl/Xhr正则 请按照模版修改后再传入](https://www.cnblogs.com/Renyi-Fan/p/9074705.html)
+```
+ php url拦截:
+ 拦截Regex: /daih.php\?(.*)/
+ java url拦截:
+ 拦截Regex: daih.php\\?(.*)
+ 
+ php xhr拦截:
+ /index.php\?aeroxada(.*)/
+ java xhr拦截:
+ index.php\\?aeroxada(.*)
+```
 # 获取设备列表
 
 **请求URL：** 
@@ -76,72 +89,55 @@
  **返回示例**
 
 ```
-  {
+ {
+    "msg": "success",
     "code": 200,
-	"msg":"success"
-	"data":[
-		{
-       		 "html": "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">get successundefined</pre></body></html>",
-      		  "responseHeaders": [
-         	   {
-            	    "key": "connection",
-             	    "value": "keep-alive"
-          	   },
-          	   {
-            	    "key": "content-length",
-            	    "value": "20"
-           	   },
-                   {
-                    "key": "content-type",
-                    "value": "text/html; charset=utf-8"
-            	   },
-            	   {
-                   "key": "date",
-                   "value": "Sat, 22 Feb 2020 07:20:12 GMT"
-            	   },
-            	   {
-                   "key": "etag",
-                   "value": "W/\"14-egV51QIW9Fh6WBssjF7NgB25Ckg\""
-                   },
-                   {
-                   "key": "x-powered-by",
-                   "value": "Express"
-          	   }],
-       		 "screenshot": "iVBORw0KGgoAAAANSUhEUgAABDgAAAgCCAIAAAABM7VnAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4nOzdd1wUd+L/8aFKU0BUFARREQVEUFDBFo0xGhvGWFM0xngmeqYnxtzl7kxMvUtPjDGJOTW2qLEjltiVYFcUpapIEREQ6f33x/5uvuvM7oKwCx/09Xz4xzo789nPzs4u8575FDPpg/kSAAAAAIjEvLErAAAAAABKBBUAAAAAwiGoAAAAABAOQQUAAACAcAgqAAAAAIRDUAEAAAAgHIIKAAAAAOEQVAAAAAAIh6ACAAAAQDgEFQAAAADCIagAAAAAEA5BBQAAAIBwCCoAAAAAhENQAQAAACAcggoAAAAA4RBUAAAAAAiHoAIAAABAOAQ,
-		 "url": "http://192.168.0.104:3000/gettest"
-		 },
-		{
-       		 "html": "<html><head></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">get successundefined</pre></body></html>",
-      		  "responseHeaders": [
-         	   {
-            	    "key": "connection",
-             	    "value": "keep-alive"
-          	   },
-          	   {
-            	    "key": "content-length",
-            	    "value": "20"
-           	   },
-                   {
-                    "key": "content-type",
-                    "value": "text/html; charset=utf-8"
-            	   },
-            	   {
-                   "key": "date",
-                   "value": "Sat, 22 Feb 2020 07:20:12 GMT"
-            	   },
-            	   {
-                   "key": "etag",
-                   "value": "W/\"14-egV51QIW9Fh6WBssjF7NgB25Ckg\""
-                   },
-                   {
-                   "key": "x-powered-by",
-                   "value": "Express"
-          	   }],
-       		 "screenshot": "iVBORw0KGgoAAAANSUhEUgAABDgAAAgCCAIAAAABM7VnAAAAA3NCSVQICAjb4U/gAAAgAElEQVR4nOzdd1wUd+L/8aFKU0BUFARREQVEUFDBFo0xGhvGWFM0xngmeqYnxtzl7kxMvUtPjDGJOTW2qLEjltiVYFcUpapIEREQ6f33x/5uvuvM7oKwCx/09Xz4xzo789nPzs4u8575FDPpg/kSAAAAAIjEvLErAAAAAABKBBUAAAAAwiGoAAAAABAOQQUAAACAcAgqAAAAAIRDUAEAAAAgHIIKAAAAAOEQVAAAAAAIh6ACAAAAQDgEFQAAAADCIagAAAAAEA5BBQAAAIBwCCoAAAAAhENQAQAAACAcggoAAAAA4RBUAAAAAAiHoAIAAABAOAQ,
-		 "url": "http://192.168.0.104:3000/gettest"
-		 },
-	]
-  }
+    "data": [
+        {
+            "html": "<html lang=\"en\"><head>\n  <script src=\"https://unpkg.com/ajax-hook/dist/ajaxhook.min.js\"></script> \n  <script language=\"JavaScript\">\n    // This only works if `open` and `send` are called in a synchronous way\n    // That is, after calling `open`, there must be no other call to `open` or\n    // `send` from another place of the code until the matching `send` is called.\n    requestID = null;\n    XMLHttpRequest.prototype.reallyOpen = XMLHttpRequest.prototype.open;\n    XMLHttpRequest.prototype.reallySend = XMLHttpRequest.prototype.send;\n    XMLHttpRequest.prototype.send = function (body) {\n        HTMLOUT.xhrSend(requestID, body);\n        this.reallySend(body);\n    };\n    XMLHttpRequest.prototype.open = function (method, url, async, user, password) {\n        requestID = generateRandom()\n        HTMLOUT.xhrOpen(method, url, requestID);\n        this.reallyOpen(method, url, async, user, password);\n    };\n\n\n\n    function generateRandom() {\n        return Math.floor((1 + Math.random()) * 0x10000)\n            .toString(16)\n            .substring(1);\n    }\n<!--    hookAjax({-->\n<!--        onreadystatechange: function (xhr) {-->\n<!--            console.log(\"onreadystatechange called: %O\", xhr);-->\n<!--            HTMLOUT.onreadystatechange(`onreadystatechange: ${JSON.stringify(xhr)}`);-->\n<!--        },-->\n<!--        onload: function (xhr) {-->\n<!--            HTMLOUT.onLoad(JSON.stringify(xhr));-->\n<!--        },-->\n<!--        open: function (arg, xhr) {-->\n<!--            requestID = generateRandom();-->\n<!--            console.log(`open called: method:${arg[0]},url${arg[1]},async:${arg[2]}`);-->\n<!--            HTMLOUT.xhrOpen(arg[0], arg[1], requestID);-->\n<!--        },-->\n<!--    });-->\n</script> \n  <meta charset=\"UTF-8\"> \n  <title>Loading</title> \n </head> \n <body> \n  <script>\n      xhr=new XMLHttpRequest();\n      xhr.onreadystatechange=function(){\n        if (xhr.readyState==4 && xhr.status==200){\n          document.querySelector(\"body\").innerHTML = xhr.responseText;\n        }\n      }\n      xhr.open(\"POST\",\"index.php?aeroxada\",true);\n      xhr.setRequestHeader(\"Content-type\",\"application/x-www-form-urlencoded\");\n      xhr.setRequestHeader(\"token\",\"areeobsk\");\n      xhr.setRequestHeader(\"secure_token\",\"aressseobsk\");\n      xhr.send('a=b&c=d');\n    </script>  \n \n</body></html>",
+            "responseHeaders": [],
+            "screenshot": "",
+            "url": "",
+            "xhrInfo": [
+                {
+                    "body": "a=b&c=d",
+                    "method": "POST",
+                    "requestHeaders": [
+                        {
+                            "key": "Origin",
+                            "value": "http://80.240.25.154"
+                        },
+                        {
+                            "key": "Content-type",
+                            "value": "application/x-www-form-urlencoded"
+                        },
+                        {
+                            "key": "secure_token",
+                            "value": "aressseobsk"
+                        },
+                        {
+                            "key": "Accept",
+                            "value": "*/*"
+                        },
+                        {
+                            "key": "User-Agent",
+                            "value": "Mozilla/5.0 (Linux; Android 9; Redmi Note 8 Build/PKQ1.190616.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.126 MQQBrowser/6.2 TBS/045120 Mobile Safari/537.36"
+                        },
+                        {
+                            "key": "Referer",
+                            "value": "http://80.240.25.154/?xhr"
+                        },
+                        {
+                            "key": "token",
+                            "value": "areeobsk"
+                        }
+                    ],
+                    "url": "http://80.240.25.154/index.php?aeroxada"
+                }
+            ]
+        }
+    ]
+}
 ```
 
  **返回参数说明** 
