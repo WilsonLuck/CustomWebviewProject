@@ -45,6 +45,7 @@
 |devicesID |string   |设备ID，用于向具体设备发送指令  |
 |ipAddress |string   |设备IP  |
 |systemModel |string   |设备型号  |
+|deviceBrand |string   |设备品牌  |
 
 # 发送指令
 **请求URL：** 
