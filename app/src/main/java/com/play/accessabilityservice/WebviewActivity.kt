@@ -326,7 +326,7 @@ class WebviewActivity : AppCompatActivity() {
                 Logger.i("deferred is not null canceled ${deferred!!.isCancelled}")
 
             }
-            deferred = postData2Server()
+            deferred = postData2ServerAsync()
         }
 
         @JavascriptInterface
@@ -364,7 +364,7 @@ class WebviewActivity : AppCompatActivity() {
     }
 
 
-    private fun postData2Server(): Deferred<Int> {
+    private fun postData2ServerAsync(): Deferred<Int> {
         return GlobalScope.async {
             delay(5000 + requestDTO.pageWait.toLong())
             /*
