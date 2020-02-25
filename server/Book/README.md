@@ -21,13 +21,20 @@
   {
     "code": 200,
 	"msg":"success"
-	"data":
+	"data":[
 		{
   		"deviceBrand":"OnePlus",
   	 	"devicesID":"ucHuyQ6fAQ7je59UAAAA",
   		"ipAddress":"192.168.0.108",
  		"systemModel":"ONEPLUS A6010"
-		}
+		},
+		{
+  		"deviceBrand":"RedMi",
+  	 	"devicesID":"ucHuyQ6fAQ7je59UAAAA",
+  		"ipAddress":"192.168.0.109",
+ 		"systemModel":"RedMi X1"
+		},
+		]
   }
 ```
 
