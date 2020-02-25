@@ -2,6 +2,7 @@
 | ------------ | ------------ |
 |  408 |  接口超时|
 |  500|  服务器内部错误|
+|  40000|  无设备连接|
 |  40001 | 缺失参数  |
 
 # 获取设备列表
@@ -63,7 +64,7 @@
 |screenshot |bool   |flase|默认false，是否需要返回当前页面截屏base64编码后的字符串，  |
 |blockUrlPattern |string   |flase|正则表达式， 如果被访问的页面进行某种形式的 跳转(javascript重定向，meta refresh等)，如果跳转的网页符合block_url_pattern ，则直接返回网址|
 |javascriptCode |string   |flase|正则表达式列表， 如果被访问的页面 有多个XHR请求， 并且XHR请求的网址符合​ block_xhr_request_pattern， 则返回并且 拦截XHR的请求数据  |
-
+|pageWait |int   |flase|页面等待时间，等待后才会返还数据，毫秒表示，例如2s后再返回数据则填 2000  |
  **返回示例**
 
 ```

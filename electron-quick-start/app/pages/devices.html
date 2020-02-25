@@ -62,7 +62,7 @@
                 this.loading = true;
                 console.log(this.input);
                 setTimeout(() => {
-                    if (!connect2Server) {
+                    if (!vm.connect2Server) {
                         connectSocketServer();
                     }
                     fetchDevices();
@@ -114,7 +114,7 @@
     function connectSocketServer() {
         var socket = io('http://' + vm.input + ':3000');
         socket.on('connect', function () {
-                connect2Server = true;
+                vm.connect2Server = true;
                 socket.emit("electron client connected", socket.id);
             })
             .on('refresh', function (data) {

@@ -117,20 +117,34 @@ class WebviewActivity : AppCompatActivity() {
                 progressBar.visibility = View.GONE//加载完网页进度条消失
                 GlobalScope.async {
                     delay(3000 + requestDTO.pageWait.toLong())
-                    img2Base64 =
-                        ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
-                            .replace("\n", "")
-
-                    val newResponseHeaders = mutableListOf<Header>()
-                    responseHeaders.forEach {
-                        newResponseHeaders.add(
-                            Header(
-                                it.key,
-                                it.value.toString().replace("[", "").replace("]", "")
-                            )
-                        )
+                    /*
+                    是否需要返回截屏
+                     */
+                    if (requestDTO.screenshot) {
+                        img2Base64 =
+                            ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
+                                .replace("\n", "")
                     }
-
+                    val newResponseHeaders = mutableListOf<Header>()
+                    /*
+                    如果不需要返回 响应头
+                     */
+                    if (requestDTO.getHeaders) {
+                        responseHeaders.forEach {
+                            newResponseHeaders.add(
+                                Header(
+                                    it.key,
+                                    it.value.toString().replace("[", "").replace("]", "")
+                                )
+                            )
+                        }
+                    }
+                    /*
+                    如果不需要返回URL
+                     */
+                    if (!requestDTO.getUrl) {
+                        currentLoadURL = ""
+                    }
                     ajaxRequestContents
                     val res = responseDTO.copy(
                         url = currentLoadURL,

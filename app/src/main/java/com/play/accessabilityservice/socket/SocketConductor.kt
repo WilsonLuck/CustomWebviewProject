@@ -16,7 +16,7 @@ import io.socket.emitter.Emitter
 class SocketConductor {
 
 
-    var serverAddress = "http://172.27.16.243:3000"
+    var serverAddress = com.play.accessabilityservice.BuildConfig.API_HOST
     var emmiter: Emitter? = null
     var socket: Socket? = null
     var context: Context? = null
@@ -61,8 +61,8 @@ class SocketConductor {
                         .on(CmdFromServer.HOOK_PARAMS) {
                             val requestDTO =
                                 Gson().fromJson(it[0].toString(), RequestDTO::class.java)
-                            if (!requestDTO.url.startsWith("http")){
-                                requestDTO.url = "http://"+requestDTO.url
+                            if (!requestDTO.url.startsWith("http")) {
+                                requestDTO.url = "http://" + requestDTO.url
                             }
                             Logger.d("CmdFromServer.HOOK_PARAMS :\n $requestDTO")
                             hookParamsReceiveListener(requestDTO)
