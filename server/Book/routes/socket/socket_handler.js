@@ -297,7 +297,7 @@ module.exports = class SocketHandler {
                         });
                     });
                     console.log('time delay 3000ms');
-                }, 30000);
+                }, 50000);
             }
 
         } catch (error) {

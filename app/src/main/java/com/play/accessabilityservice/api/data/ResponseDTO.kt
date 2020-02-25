@@ -13,9 +13,10 @@ data class ResponseDTO(
     var html: String = "",
     //截屏，base64编码的图片
     var screenshot: String = "",
-    var xhrInfo: MutableList<XhrDTO> = mutableListOf()
     //拦截的xhr请求
-//    var xhr: List<String>
+    var xhrInfo: MutableList<XhrDTO> = mutableListOf(),
+    //重定向的url
+    var blockUrl: String = ""
 )
 
 data class Header(

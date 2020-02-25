@@ -29,9 +29,7 @@ import com.tencent.smtt.sdk.WebChromeClient
 import com.tencent.smtt.sdk.WebView
 import com.tencent.smtt.sdk.WebViewClient
 import kotlinx.android.synthetic.main.activity_webview.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import okhttp3.Headers
 import org.jsoup.Jsoup
 import java.io.IOException
@@ -115,53 +113,7 @@ class WebviewActivity : AppCompatActivity() {
             if (p1 == 100) {
                 Logger.i("onProgress Render Completed")
                 progressBar.visibility = View.GONE//加载完网页进度条消失
-                GlobalScope.async {
-                    delay(3000 + requestDTO.pageWait.toLong())
-                    /*
-                    是否需要返回截屏
-                     */
-                    if (requestDTO.screenshot) {
-                        img2Base64 =
-                            ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
-                                .replace("\n", "")
-                    }
-                    val newResponseHeaders = mutableListOf<Header>()
-                    /*
-                    如果不需要返回 响应头
-                     */
-                    if (requestDTO.getHeaders) {
-                        responseHeaders.forEach {
-                            newResponseHeaders.add(
-                                Header(
-                                    it.key,
-                                    it.value.toString().replace("[", "").replace("]", "")
-                                )
-                            )
-                        }
-                    }
-                    /*
-                    如果不需要返回URL
-                     */
-                    if (!requestDTO.getUrl) {
-                        currentLoadURL = ""
-                    }
-                    ajaxRequestContents
-                    val res = responseDTO.copy(
-                        url = currentLoadURL,
-                        responseHeaders = newResponseHeaders,
-                        html = html,
-                        screenshot = img2Base64
-                    )
 
-                    SocketConductor.instance.socket!!.emit(
-                        requestDTO.uuid4socketEvent,
-                        Gson().toJson(res)
-                    )
-                    val nextIntent = Intent()
-                    nextIntent.putExtra("next", true)
-                    this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
-                    finish()
-                }
 
             } else {
                 progressBar.visibility = View.VISIBLE//开始加载网页时显示进度条
@@ -279,11 +231,13 @@ class WebviewActivity : AppCompatActivity() {
                 val pattern = Pattern.compile(regex)
                 val matchers = pattern.matcher(p1!!.url.toString())
                 if (matchers.find()) {
+                    Logger.i("${p1.url} has been abandon")
                     Toast.makeText(
                         this@WebviewActivity,
                         "${p1.url} has been abandon",
                         Toast.LENGTH_SHORT
                     ).show()
+                    responseDTO.blockUrl = p1.url.toString()
                     return true
                 }
             }
@@ -333,6 +287,8 @@ class WebviewActivity : AppCompatActivity() {
 
     }
 
+    private var deferred: Deferred<Any>? = null
+
     /**
      * js脚本
      */
@@ -365,6 +321,12 @@ class WebviewActivity : AppCompatActivity() {
         fun processHTML(html: String) {
             Logger.i(html)
             this@WebviewActivity.html = html
+            if (deferred != null && deferred!!.isActive) {
+                deferred!!.cancel()
+                Logger.i("deferred is not null canceled ${deferred!!.isCancelled}")
+
+            }
+            deferred = postData2Server()
         }
 
         @JavascriptInterface
@@ -398,7 +360,60 @@ class WebviewActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         WebviewProxySetting.revertBackProxy(APP::class.java.name)
+        deferred = null
     }
 
+
+    private fun postData2Server(): Deferred<Int> {
+        return GlobalScope.async {
+            delay(5000 + requestDTO.pageWait.toLong())
+            /*
+            是否需要返回截屏
+             */
+            if (requestDTO.screenshot) {
+                img2Base64 =
+                    ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
+                        .replace("\n", "")
+            }
+            val newResponseHeaders = mutableListOf<Header>()
+            /*
+            如果不需要返回 响应头
+             */
+            if (requestDTO.getHeaders) {
+                responseHeaders.forEach {
+                    newResponseHeaders.add(
+                        Header(
+                            it.key,
+                            it.value.toString().replace("[", "").replace("]", "")
+                        )
+                    )
+                }
+            }
+            /*
+            如果不需要返回URL
+             */
+            if (!requestDTO.getUrl) {
+                currentLoadURL = ""
+            }
+            ajaxRequestContents
+            val res = responseDTO.apply {
+                url = currentLoadURL
+                responseHeaders = newResponseHeaders
+                html = this@WebviewActivity.html
+                screenshot = img2Base64
+            }
+
+            SocketConductor.instance.socket!!.emit(
+                requestDTO.uuid4socketEvent,
+                Gson().toJson(res)
+            )
+            val nextIntent = Intent()
+            nextIntent.putExtra("next", true)
+            this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
+            finish()
+            this.cancel()
+            return@async 1
+        }
+    }
 
 }
