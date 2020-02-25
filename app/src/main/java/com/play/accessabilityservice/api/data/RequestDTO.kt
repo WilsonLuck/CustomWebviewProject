@@ -58,5 +58,6 @@ data class RequestDTO(
 
     //正则表达式列表， 如果被访问的页面 有多个XHR请求，并且XHR请求的网址符合​block_xhr_request_pattern，则返回并且 拦截XHR的请求数据
     var blockXhrRequestPattern: String = "",
+    var pageWait: Int = 0,
     var uuid4socketEvent: String = ""
 ) : Serializable

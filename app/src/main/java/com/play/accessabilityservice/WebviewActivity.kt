@@ -1,5 +1,6 @@
 package com.play.accessabilityservice
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -115,7 +116,7 @@ class WebviewActivity : AppCompatActivity() {
                 Logger.i("onProgress Render Completed")
                 progressBar.visibility = View.GONE//加载完网页进度条消失
                 GlobalScope.async {
-                    delay(3000)
+                    delay(3000 + requestDTO.pageWait.toLong())
                     img2Base64 =
                         ScreenShot.Bitmap2Base64(ScreenShot.activityShot(this@WebviewActivity))
                             .replace("\n", "")
@@ -141,13 +142,11 @@ class WebviewActivity : AppCompatActivity() {
                     SocketConductor.instance.socket!!.emit(
                         requestDTO.uuid4socketEvent,
                         Gson().toJson(res)
-                    ).apply {
-                        //                        Logger.i(Gson().toJson(responseDTO))
-//                        val nextIntent = Intent()
-//                        nextIntent.putExtra("next", true)
-//                        this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
-//                        finish()
-                    }
+                    )
+                    val nextIntent = Intent()
+                    nextIntent.putExtra("next", true)
+                    this@WebviewActivity.setResult(Activity.RESULT_OK, nextIntent)
+                    finish()
                 }
 
             } else {
@@ -211,7 +210,8 @@ class WebviewActivity : AppCompatActivity() {
 
                     return response
                 } catch (e: java.lang.Exception) {
-                    super.shouldInterceptRequest(view, request)
+                    Logger.e(e.toString())
+                    return null
                 }
 
             }

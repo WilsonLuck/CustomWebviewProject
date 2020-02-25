@@ -16,7 +16,7 @@ import io.socket.emitter.Emitter
 class SocketConductor {
 
 
-    var serverAddress = "http://192.168.0.104:3000"
+    var serverAddress = "http://172.27.16.243:3000"
     var emmiter: Emitter? = null
     var socket: Socket? = null
     var context: Context? = null

@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 let SocketHandler = require('../routes/socket/socket_handler');
+var path = require('path');
+
 /* GET home page. */
 router.get('/', function (req, res, next) {
   console.log(req.headers);
@@ -18,11 +20,14 @@ router.get('/gettest', (req, res, next) => {
 router.post('/posttest', function (req, res, next) {
   console.log(req.body);
   // res.sendStatus(307);
-  res.render('index', {
-    title: 'Express',
-
+  res.json({
+    data: req.body
   });
 });
+
+router.get("/xhr", (req, res, next) => {
+  res.sendfile(path.join(__dirname, '../views/xhr.html'))
+})
 
 router.get("/devices", (req, res, next) => {
   console.log(global.userInfo);

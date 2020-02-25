@@ -1,9 +1,11 @@
 package com.play.accessabilityservice.api
 
 import android.content.Context
+import com.google.gson.Gson
 import com.orhanobut.logger.Logger
 import com.play.accessabilityservice.BuildConfig
 import com.play.accessabilityservice.WebviewActivity
+import com.play.accessabilityservice.api.data.ProxyDTO
 import com.play.accessabilityservice.api.data.RequestDTO
 import com.play.accessabilityservice.util.StreamHelper
 import com.tencent.smtt.export.external.interfaces.WebResourceRequest
@@ -11,6 +13,7 @@ import com.tencent.smtt.export.external.interfaces.WebResourceResponse
 import okhttp3.*
 import java.io.ByteArrayInputStream
 import java.io.InputStream
+import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
@@ -100,22 +103,26 @@ class InternalOkHttpClient {
             /**
              * 代理设置
              */
-//            if (requestDTO.proxy.isNotBlank()) {
-//                var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
-//                var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
-//                when (gson.proxyType
-//                    ) {
-//                    "HTTP" -> {
-//                        proxtTyp = Proxy.Type.HTTP
-//                    }
-//                    "SOCKS" -> {
-//                        proxtTyp = Proxy.Type.SOCKS
-//                    }
-//                }
-//                okHttpClient = okHttpClient.newBuilder()
-//                    .proxy(Proxy(proxtTyp, InetSocketAddress(gson.serverAddress, gson.port)))
-//                    .build()
-//            }
+            if (requestDTO.proxy.isNotBlank()) {
+                var gson = Gson().fromJson(requestDTO.proxy, ProxyDTO::class.java)
+                var proxtTyp: Proxy.Type = Proxy.Type.DIRECT
+                when (gson.proxyType
+                    ) {
+                    "HTTP" -> {
+                        proxtTyp = Proxy.Type.HTTP
+                    }
+                    "SOCKS" -> {
+                        proxtTyp = Proxy.Type.SOCKS
+                    }
+                }
+                okHttpClient = okHttpClient.newBuilder()
+                    .proxy(Proxy(proxtTyp, InetSocketAddress(gson.serverAddress, gson.port)))
+                    .build()
+            }else{
+                okHttpClient = okHttpClient.newBuilder()
+                    .proxy(null)
+                    .build()
+            }
 
             if (requestDTO.sendHeaders.isNotBlank()) {
                 val headers = requestDTO.sendHeaders.split("&")

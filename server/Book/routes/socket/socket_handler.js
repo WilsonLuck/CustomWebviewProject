@@ -134,8 +134,17 @@ module.exports = class SocketHandler {
          * 随机唯一请求id，用于设置本次请求的socket监听
          */
         this.uuid4socketEvent = uuid.v4();
+        /**
+         * page等待时间，时间到再返回数据
+         */
+        this.pageWait = this.requestParams.pageWait ? this.requestParams.pageWait : 0;
     };
-
+    /**
+     * 移除所有socket里的监听器
+     */
+    removeAllLitenerByUUID = function (uuid4socketEvent) {
+        console.log("this.uuid4socketEvent" + uuid4socketEvent);
+    };
     handler() {
         try {
             /**
@@ -156,9 +165,21 @@ module.exports = class SocketHandler {
                 screenshot: this.screenshot,
                 blockUrlPattern: this.blockUrlPattern,
                 blockXhrRequestPattern: this.blockXhrRequestPattern,
+                pageWait: this.pageWait,
                 uuid4socketEvent: this.uuid4socketEvent
             });
             console.log(requestDatas);
+
+            if (global.sockets.size == 0) {
+                this.res.json({
+                    code: 40000,
+                    msg: "node device connected",
+                    data: ""
+                })
+
+                return
+            }
+
             if (this.devicesID) {
                 if (global.sockets
                     .get(this.devicesID) == null) {
@@ -269,8 +290,12 @@ module.exports = class SocketHandler {
                         msg: 'Request TimeOut',
                         data: responseDats
                     });
-
-                    removeAllLitenerByUUID(this.uuid4socketEvent);
+                    this.removeAllLitenerByUUID(this.uuid4socketEvent);
+                    global.sockets.forEach((client) => {
+                        client.removeAllListeners(this.uuid4socketEvent, () => {
+                            console.log('remove success')
+                        });
+                    });
                     console.log('time delay 3000ms');
                 }, 30000);
             }
@@ -285,14 +310,5 @@ module.exports = class SocketHandler {
             })
         }
     }
-    /**
-     * 移除所有socket里的监听器
-     */
-    removeAllLitenerByUUID(uuid4socketEvent) {
-        global.sockets.forEach((client) => {
-            client.removeAllListeners(uuid4socketEvent, () => {
-                console.log('remove success')
-            });
-        });
-    }
+
 }

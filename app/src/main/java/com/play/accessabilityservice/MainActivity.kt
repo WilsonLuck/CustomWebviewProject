@@ -46,7 +46,9 @@ class MainActivity : AppCompatActivity() {
 //                        url = "http://80.240.25.154/green/",
 //                        blockUrlPattern = "daih.php\\?(.*)"
                         url = "http://80.240.25.154/?xhr",
+//                        url = "http://172.27.16.243:3000/xhr",
                         blockXhrRequestPattern = "index.php\\?aeroxada(.*)"
+//                        blockXhrRequestPattern = ":3000\\?xhr(.*)"
 //                                    "http://192.168.0.103:3000/users",
 //                        url = "https://mbd.baidu.com/newspage/data/landingsuper?context=%7B%22nid%22%3A%22news_9307631538385676634%22%7D&n_type=0&p_from=1",
 //                        "https://www.v2ex.com/",

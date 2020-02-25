@@ -22,7 +22,7 @@ class APP : Application() {
             .build()
 
         Logger.addLogAdapter(AndroidLogAdapter(formatStrategy))
-        QbSdk.initX5Environment(applicationContext, object : QbSdk.PreInitCallback {
+        QbSdk.initX5Environment(this, object : QbSdk.PreInitCallback {
             override fun onCoreInitFinished() {
                 Logger.i("onViewInitFinished")
 
