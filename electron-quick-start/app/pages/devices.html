@@ -62,7 +62,9 @@
                 this.loading = true;
                 console.log(this.input);
                 setTimeout(() => {
-                    connectSocketServer();
+                    if (!connect2Server) {
+                        connectSocketServer();
+                    }
                     fetchDevices();
                 }, 1000);
             },
@@ -78,7 +80,8 @@
                 tableData: [],
                 serverAddressError: false,
                 errorMsg: '',
-                consoleMsg: ''
+                consoleMsg: '',
+                connect2Server: false
             }
         },
     })
@@ -111,12 +114,14 @@
     function connectSocketServer() {
         var socket = io('http://' + vm.input + ':3000');
         socket.on('connect', function () {
+                connect2Server = true;
                 socket.emit("electron client connected", socket.id);
             })
             .on('refresh', function (data) {
                 fetchDevices();
             })
             .on('disconnect', function () {
+                vm.connect2Server = false;
                 console.log('disconnect 2 server');
             });
     }
